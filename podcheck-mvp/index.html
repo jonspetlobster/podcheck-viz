@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PodCheck — Podcast Fact-Checking</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0a1628;
+  --navy-light: #111d33;
+  --navy-mid: #1a2940;
+  --amber: #f59e0b;
+  --amber-light: #fbbf24;
+  --amber-dark: #d97706;
+  --white: #ffffff;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --green: #10b981;
+  --green-bg: #064e3b;
+  --yellow: #f59e0b;
+  --yellow-bg: #78350f;
+  --orange: #f97316;
+  --orange-bg: #7c2d12;
+  --red: #ef4444;
+  --red-bg: #7f1d1d;
+  --blue: #3b82f6;
+  --blue-bg: #1e3a5f;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',system-ui,sans-serif; background:var(--navy); color:var(--white); min-height:100vh; }
+a { color:var(--amber); text-decoration:none; cursor:pointer; }
+a:hover { color:var(--amber-light); }
+
+/* Nav */
+nav { background:var(--navy-light); border-bottom:1px solid var(--navy-mid); padding:0 2rem; position:sticky; top:0; z-index:100; }
+.nav-inner { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:64px; }
+.logo { font-size:1.4rem; font-weight:800; display:flex; align-items:center; gap:.5rem; cursor:pointer; }
+.logo span { color:var(--amber); }
+.nav-links { display:flex; gap:1.5rem; }
+.nav-links a { color:var(--gray-400); font-size:.9rem; font-weight:500; transition:color .2s; }
+.nav-links a:hover, .nav-links a.active { color:var(--white); }
+
+/* Layout */
+.container { max-width:1200px; margin:0 auto; padding:2rem; }
+.page { display:none; }
+.page.active { display:block; }
+
+/* Search */
+.search-wrap { position:relative; max-width:600px; margin:0 auto 2rem; }
+.search-wrap input { width:100%; padding:1rem 1rem 1rem 3rem; background:var(--navy-light); border:1px solid var(--navy-mid); border-radius:12px; color:var(--white); font-size:1rem; outline:none; transition:border-color .2s; }
+.search-wrap input:focus { border-color:var(--amber); }
+.search-wrap input::placeholder { color:var(--gray-500); }
+.search-wrap svg { position:absolute; left:1rem; top:50%; transform:translateY(-50%); color:var(--gray-500); }
+.search-results { position:absolute; top:100%; left:0; right:0; background:var(--navy-light); border:1px solid var(--navy-mid); border-radius:12px; margin-top:.5rem; overflow:hidden; z-index:50; display:none; max-height:400px; overflow-y:auto; }
+.search-results.show { display:block; }
+.search-result-item { padding:.75rem 1rem; cursor:pointer; display:flex; align-items:center; gap:.75rem; transition:background .15s; }
+.search-result-item:hover { background:var(--navy-mid); }
+.search-result-item .type { font-size:.7rem; text-transform:uppercase; padding:.15rem .5rem; border-radius:4px; background:var(--navy-mid); color:var(--gray-400); font-weight:600; flex-shrink:0; }
+
+/* Hero */
+.hero { text-align:center; padding:3rem 0 2rem; }
+.hero h1 { font-size:2.8rem; font-weight:800; margin-bottom:.75rem; }
+.hero h1 .accent { color:var(--amber); }
+.hero p { color:var(--gray-400); font-size:1.15rem; max-width:550px; margin:0 auto; }
+.stats-bar { display:flex; justify-content:center; gap:3rem; margin:2rem 0; }
+.stat { text-align:center; }
+.stat .num { font-size:1.8rem; font-weight:800; color:var(--amber); }
+.stat .label { font-size:.8rem; color:var(--gray-500); text-transform:uppercase; letter-spacing:.05em; margin-top:.25rem; }
+
+/* Filter bar */
+.filter-bar { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.5rem; align-items:center; }
+.filter-bar label { font-size:.8rem; color:var(--gray-500); font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin-right:.25rem; }
+.filter-select { background:var(--navy-light); border:1px solid var(--navy-mid); color:var(--white); padding:.45rem .75rem; border-radius:8px; font-size:.85rem; font-family:inherit; outline:none; cursor:pointer; }
+.filter-select:focus { border-color:var(--amber); }
+.filter-pill { padding:.35rem .75rem; border-radius:20px; font-size:.8rem; font-weight:500; background:var(--navy-mid); color:var(--gray-400); border:1px solid transparent; cursor:pointer; transition:all .2s; }
+.filter-pill:hover { color:var(--white); border-color:var(--gray-500); }
+.filter-pill.active { background:var(--amber); color:var(--navy); border-color:var(--amber); font-weight:600; }
+.filter-count { font-size:.8rem; color:var(--gray-500); margin-left:auto; }
+
+/* Cards */
+.section-title { font-size:1.3rem; font-weight:700; margin-bottom:1rem; display:flex; align-items:center; gap:.5rem; }
+.section-title .emoji { font-size:1.2rem; }
+.card { background:var(--navy-light); border:1px solid var(--navy-mid); border-radius:12px; padding:1.25rem; margin-bottom:.75rem; transition:border-color .2s, transform .15s; cursor:pointer; }
+.card:hover { border-color:var(--amber); transform:translateY(-1px); }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; }
+@media(max-width:768px) { .grid-2,.grid-3 { grid-template-columns:1fr; } .filter-bar { flex-direction:column; align-items:stretch; } }
+
+/* Verdict badges */
+.verdict { display:inline-flex; align-items:center; gap:.35rem; padding:.25rem .65rem; border-radius:6px; font-size:.78rem; font-weight:600; white-space:nowrap; }
+.verdict-true { background:var(--green-bg); color:var(--green); }
+.verdict-mostly-true { background:#064e3b; color:#34d399; }
+.verdict-mixed { background:var(--yellow-bg); color:var(--yellow); }
+.verdict-mostly-false { background:var(--orange-bg); color:var(--orange); }
+.verdict-false { background:var(--red-bg); color:var(--red); }
+
+/* Grade */
+.grade { display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:10px; font-size:1.4rem; font-weight:800; }
+.grade-a { background:var(--green-bg); color:var(--green); }
+.grade-b { background:#064e3b; color:#34d399; }
+.grade-c { background:var(--yellow-bg); color:var(--yellow); }
+.grade-d { background:var(--orange-bg); color:var(--orange); }
+.grade-f { background:var(--red-bg); color:var(--red); }
+.grade-sm { width:36px; height:36px; font-size:1rem; border-radius:8px; }
+
+/* Claim card */
+.claim-card { display:flex; gap:1rem; align-items:flex-start; }
+.claim-card .claim-content { flex:1; }
+.claim-card .claim-text { font-size:.95rem; font-weight:500; margin-bottom:.5rem; line-height:1.5; }
+.claim-card .claim-meta { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+.claim-meta .person { font-size:.8rem; color:var(--gray-400); }
+.claim-meta .episode { font-size:.75rem; color:var(--gray-500); }
+.claim-meta .date { font-size:.75rem; color:var(--gray-500); }
+.claim-meta .cat-tag { font-size:.7rem; color:var(--blue); background:var(--blue-bg); padding:.1rem .4rem; border-radius:4px; }
+
+/* Person card */
+.person-card { display:flex; align-items:center; gap:1rem; }
+.person-card .avatar { width:48px; height:48px; border-radius:50%; background:var(--navy-mid); display:flex; align-items:center; justify-content:center; font-size:1.2rem; font-weight:700; color:var(--amber); flex-shrink:0; }
+.person-card .info { flex:1; }
+.person-card .name { font-weight:600; font-size:.95rem; }
+.person-card .podcast { font-size:.8rem; color:var(--gray-500); }
+.person-card .stats-inline { display:flex; gap:.75rem; margin-top:.35rem; }
+.stats-inline span { font-size:.75rem; color:var(--gray-400); }
+
+/* Profile page */
+.profile-header { display:flex; gap:2rem; align-items:flex-start; margin-bottom:2rem; padding:2rem; background:var(--navy-light); border-radius:16px; border:1px solid var(--navy-mid); }
+.profile-avatar { width:80px; height:80px; border-radius:50%; background:var(--navy-mid); display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:var(--amber); flex-shrink:0; }
+.profile-info { flex:1; }
+.profile-info h2 { font-size:1.6rem; margin-bottom:.25rem; }
+.profile-info .podcast-name { color:var(--gray-400); margin-bottom:.75rem; }
+.profile-stats { display:flex; gap:2rem; flex-wrap:wrap; }
+.profile-stat .val { font-size:1.2rem; font-weight:700; }
+.profile-stat .lbl { font-size:.75rem; color:var(--gray-500); text-transform:uppercase; }
+.profile-grade { text-align:center; }
+.profile-grade .grade { width:72px; height:72px; font-size:2rem; border-radius:14px; }
+.profile-grade .lbl { font-size:.75rem; color:var(--gray-500); margin-top:.5rem; }
+
+/* Leaderboard */
+.lb-row { display:flex; align-items:center; gap:1rem; padding:1rem 1.25rem; }
+.lb-rank { font-size:1.1rem; font-weight:800; color:var(--gray-500); width:2rem; text-align:center; }
+.lb-rank.top { color:var(--amber); }
+
+/* Claim detail */
+.claim-detail-header { padding:2rem; background:var(--navy-light); border-radius:16px; border:1px solid var(--navy-mid); margin-bottom:1.5rem; }
+.claim-detail-header .claim-quote { font-size:1.3rem; font-weight:600; line-height:1.6; margin-bottom:1rem; border-left:3px solid var(--amber); padding-left:1rem; }
+.evidence-card { background:var(--navy-mid); border-radius:10px; padding:1rem; margin-bottom:.75rem; }
+.evidence-card .source { font-size:.8rem; color:var(--amber); font-weight:600; margin-bottom:.35rem; }
+.evidence-card .text { font-size:.9rem; color:var(--gray-300); line-height:1.5; }
+
+/* Transcript view */
+.transcript-link { display:inline-flex; align-items:center; gap:.35rem; font-size:.85rem; color:var(--amber); cursor:pointer; margin-top:.75rem; padding:.4rem .75rem; border:1px solid var(--amber); border-radius:8px; transition:all .2s; }
+.transcript-link:hover { background:var(--amber); color:var(--navy); }
+.transcript-section { background:var(--navy-light); border:1px solid var(--navy-mid); border-radius:16px; padding:1.5rem; margin-bottom:1.5rem; }
+.transcript-section h3 { font-size:1rem; color:var(--amber); margin-bottom:1rem; display:flex; align-items:center; gap:.5rem; }
+.transcript-line { padding:.6rem .75rem; font-size:.9rem; line-height:1.6; color:var(--gray-400); border-left:3px solid transparent; margin-bottom:.25rem; border-radius:0 6px 6px 0; }
+.transcript-line .speaker { font-weight:700; color:var(--gray-300); margin-right:.5rem; }
+.transcript-line .timestamp { font-size:.75rem; color:var(--gray-600); margin-left:.5rem; }
+.transcript-line.highlight { background:rgba(245,158,11,.1); border-left-color:var(--amber); color:var(--white); }
+.transcript-line.highlight .speaker { color:var(--amber); }
+.transcript-context-note { font-size:.85rem; color:var(--gray-500); font-style:italic; margin-bottom:1rem; padding:.75rem; background:var(--navy-mid); border-radius:8px; }
+.broader-context { margin-top:1rem; padding:1rem; background:var(--navy-mid); border-radius:10px; }
+.broader-context h4 { font-size:.85rem; color:var(--amber); margin-bottom:.5rem; text-transform:uppercase; letter-spacing:.05em; }
+.broader-context p { font-size:.88rem; color:var(--gray-300); line-height:1.6; }
+
+/* Methodology */
+.method-section { background:var(--navy-light); border:1px solid var(--navy-mid); border-radius:12px; padding:1.5rem; margin-bottom:1rem; }
+.method-section h3 { font-size:1.1rem; margin-bottom:.75rem; color:var(--amber); }
+.method-section p, .method-section li { font-size:.9rem; color:var(--gray-300); line-height:1.7; }
+.method-section ul { padding-left:1.25rem; }
+.method-section li { margin-bottom:.35rem; }
+
+/* Tabs */
+.tabs { display:flex; gap:.5rem; margin-bottom:1.5rem; border-bottom:1px solid var(--navy-mid); padding-bottom:.5rem; }
+.tab { padding:.5rem 1rem; border-radius:8px; font-size:.85rem; font-weight:500; color:var(--gray-400); cursor:pointer; transition:all .2s; }
+.tab:hover { color:var(--white); }
+.tab.active { background:var(--navy-mid); color:var(--white); }
+
+/* Back link */
+.back-link { display:inline-flex; align-items:center; gap:.35rem; font-size:.85rem; color:var(--gray-400); margin-bottom:1.5rem; cursor:pointer; }
+.back-link:hover { color:var(--white); }
+
+/* Footer */
+footer { text-align:center; padding:3rem 2rem; color:var(--gray-600); font-size:.8rem; border-top:1px solid var(--navy-mid); margin-top:3rem; }
+
+/* Trending tag */
+.trending-tag { display:inline-flex; align-items:center; gap:.25rem; background:var(--amber); color:var(--navy); font-size:.7rem; font-weight:700; padding:.15rem .5rem; border-radius:4px; text-transform:uppercase; }
+
+/* Progress bar */
+.accuracy-bar { height:6px; background:var(--navy-mid); border-radius:3px; overflow:hidden; margin-top:.5rem; }
+.accuracy-fill { height:100%; border-radius:3px; }
+
+/* Show more button */
+.show-more-btn { display:block; width:100%; padding:.75rem; background:var(--navy-mid); border:1px solid var(--navy-mid); border-radius:10px; color:var(--gray-400); font-size:.9rem; font-weight:500; cursor:pointer; text-align:center; margin-top:.5rem; transition:all .2s; font-family:inherit; }
+.show-more-btn:hover { border-color:var(--amber); color:var(--white); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo" onclick="navigate('home')">🎙️ <span>PodCheck</span></div>
+    <div class="nav-links">
+      <a onclick="navigate('home')" class="active" id="nav-home">Home</a>
+      <a onclick="navigate('leaderboard')" id="nav-leaderboard">Leaderboard</a>
+      <a onclick="navigate('methodology')" id="nav-methodology">Methodology</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- HOME -->
+  <div class="page active" id="page-home">
+    <div class="hero">
+      <h1>Hold podcasters <span class="accent">accountable</span></h1>
+      <p>AI-powered fact-checking for the claims made on your favorite podcasts.</p>
+      <div class="stats-bar">
+        <div class="stat"><div class="num" id="stat-claims">0</div><div class="label">Claims Checked</div></div>
+        <div class="stat"><div class="num" id="stat-episodes">0</div><div class="label">Episodes</div></div>
+        <div class="stat"><div class="num" id="stat-people">0</div><div class="label">Podcasters</div></div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search-input" placeholder="Search claims, people, or podcasts..." oninput="handleSearch(this.value)" onfocus="handleSearch(this.value)">
+      <div class="search-results" id="search-results"></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar" id="home-filters">
+      <label>Show:</label>
+      <select class="filter-select" id="filter-show" onchange="applyFilters()">
+        <option value="all">All Shows</option>
+      </select>
+      <label style="margin-left:.75rem">Person:</label>
+      <select class="filter-select" id="filter-person" onchange="applyFilters()">
+        <option value="all">All People</option>
+      </select>
+      <label style="margin-left:.75rem">Category:</label>
+      <div id="category-pills" style="display:inline-flex;gap:.35rem;flex-wrap:wrap;"></div>
+      <span class="filter-count" id="filter-count"></span>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:2.5rem;">
+      <div>
+        <div class="section-title"><span class="emoji">🔥</span> Trending Claims</div>
+        <div id="trending-claims"></div>
+      </div>
+      <div>
+        <div class="section-title"><span class="emoji">👤</span> Top Podcasters</div>
+        <div id="top-podcasters"></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span class="emoji">📋</span> Recent Fact-Checks <span class="filter-count" id="recent-count" style="font-size:.85rem;font-weight:400;color:var(--gray-500);margin-left:.5rem"></span></div>
+    <div id="recent-claims"></div>
+    <button class="show-more-btn" id="show-more-btn" onclick="showMoreClaims()">Show More</button>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="page" id="page-leaderboard">
+    <h1 style="font-size:1.8rem;margin-bottom:.5rem;">📊 Accuracy Leaderboard</h1>
+    <p style="color:var(--gray-400);margin-bottom:1.5rem;">Ranked by overall factual accuracy across all checked claims.</p>
+    <div class="filter-bar" id="lb-filters">
+      <label>Show:</label>
+      <select class="filter-select" id="lb-filter-show" onchange="renderLeaderboard()">
+        <option value="all">All Shows</option>
+      </select>
+    </div>
+    <div id="leaderboard-list"></div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="page" id="page-profile">
+    <div class="back-link" onclick="navigate('home')">← Back</div>
+    <div id="profile-content"></div>
+  </div>
+
+  <!-- CLAIM DETAIL -->
+  <div class="page" id="page-claim">
+    <div class="back-link" onclick="goBack()">← Back</div>
+    <div id="claim-content"></div>
+  </div>
+
+  <!-- METHODOLOGY -->
+  <div class="page" id="page-methodology">
+    <h1 style="font-size:1.8rem;margin-bottom:.5rem;">📐 Our Methodology</h1>
+    <p style="color:var(--gray-400);margin-bottom:2rem;">How PodCheck verifies claims made on podcasts.</p>
+
+    <div class="method-section">
+      <h3>1. Claim Extraction</h3>
+      <p>We use AI to transcribe podcast episodes and identify verifiable factual claims — statements about data, events, science, or history that can be checked against evidence. Opinions, predictions, and subjective statements are excluded.</p>
+    </div>
+    <div class="method-section">
+      <h3>2. Evidence Gathering</h3>
+      <p>Each claim is cross-referenced against multiple authoritative sources:</p>
+      <ul>
+        <li>Peer-reviewed scientific papers and meta-analyses</li>
+        <li>Government data (BLS, CBO, Fed, CDC, WHO)</li>
+        <li>Established news organizations with fact-checking teams</li>
+        <li>Academic institutions and expert consensus</li>
+        <li>Primary sources cited by the speaker</li>
+      </ul>
+    </div>
+    <div class="method-section">
+      <h3>3. Verdict Scale</h3>
+      <p>Claims receive one of five verdicts:</p>
+      <ul>
+        <li><strong style="color:var(--green)">True</strong> — Fully supported by available evidence</li>
+        <li><strong style="color:#34d399">Mostly True</strong> — Largely accurate with minor caveats or imprecisions</li>
+        <li><strong style="color:var(--yellow)">Mixed</strong> — Contains both accurate and inaccurate elements</li>
+        <li><strong style="color:var(--orange)">Mostly False</strong> — Significant inaccuracies despite some truthful elements</li>
+        <li><strong style="color:var(--red)">False</strong> — Contradicted by available evidence</li>
+      </ul>
+    </div>
+    <div class="method-section">
+      <h3>4. Accuracy Grades</h3>
+      <p>Each speaker receives a letter grade (A–F) based on their overall accuracy rate across all checked claims. True = 100%, Mostly True = 80%, Mixed = 50%, Mostly False = 20%, False = 0%. Grades: A ≥ 85%, B ≥ 70%, C ≥ 55%, D ≥ 40%, F &lt; 40%.</p>
+    </div>
+    <div class="method-section">
+      <h3>5. Transparency</h3>
+      <p>Every verdict includes the original quote, context, sources consulted, and reasoning. We show our work so you can evaluate our conclusions independently. PodCheck is not the arbiter of truth — we surface evidence and let you decide.</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  🎙️ PodCheck &copy; 2026 — AI-powered podcast fact-checking<br>
+  <span style="color:var(--gray-600)">Not affiliated with any podcast. Claims are checked using publicly available evidence.</span>
+</footer>
+
+<script>
+// ===== DATA =====
+const shows = [
+  'All-In Podcast',
+  'Huberman Lab',
+  'Lex Fridman Podcast',
+  "Peter Attia's The Drive",
+  'Acquired',
+  'Freakonomics Radio',
+  'Found My Fitness'
+];
+
+const categories = ['Science/Health','Finance/Economics','Tech/AI','History','Nutrition'];
+
+const people = [
+  { id:'chamath', name:'Chamath Palihapitiya', initials:'CP', podcast:'All-In Podcast', grade:'B', accuracy:74, claimsChecked:86, trueRate:42, mostlyTrueRate:22, mixedRate:18, mostlyFalseRate:12, falseRate:6 },
+  { id:'sacks', name:'David Sacks', initials:'DS', podcast:'All-In Podcast', grade:'C', accuracy:61, claimsChecked:79, trueRate:30, mostlyTrueRate:20, mixedRate:24, mostlyFalseRate:16, falseRate:10 },
+  { id:'friedberg', name:'David Friedberg', initials:'DF', podcast:'All-In Podcast', grade:'A', accuracy:88, claimsChecked:64, trueRate:58, mostlyTrueRate:20, mixedRate:14, mostlyFalseRate:6, falseRate:2 },
+  { id:'jason', name:'Jason Calacanis', initials:'JC', podcast:'All-In Podcast', grade:'C', accuracy:58, claimsChecked:91, trueRate:28, mostlyTrueRate:18, mixedRate:26, mostlyFalseRate:18, falseRate:10 },
+  { id:'huberman', name:'Andrew Huberman', initials:'AH', podcast:'Huberman Lab', grade:'B', accuracy:78, claimsChecked:124, trueRate:52, mostlyTrueRate:22, mixedRate:16, mostlyFalseRate:7, falseRate:3 },
+  { id:'lex', name:'Lex Fridman', initials:'LF', podcast:'Lex Fridman Podcast', grade:'A', accuracy:85, claimsChecked:47, trueRate:55, mostlyTrueRate:25, mixedRate:12, mostlyFalseRate:6, falseRate:2 },
+  { id:'attia', name:'Peter Attia', initials:'PA', podcast:"Peter Attia's The Drive", grade:'A', accuracy:86, claimsChecked:98, trueRate:56, mostlyTrueRate:24, mixedRate:12, mostlyFalseRate:6, falseRate:2 },
+  { id:'ben', name:'Ben Gilbert', initials:'BG', podcast:'Acquired', grade:'A', accuracy:89, claimsChecked:72, trueRate:60, mostlyTrueRate:22, mixedRate:12, mostlyFalseRate:4, falseRate:2 },
+  { id:'david_r', name:'David Rosenthal', initials:'DR', podcast:'Acquired', grade:'A', accuracy:87, claimsChecked:70, trueRate:58, mostlyTrueRate:22, mixedRate:14, mostlyFalseRate:4, falseRate:2 },
+  { id:'dubner', name:'Stephen Dubner', initials:'SD', podcast:'Freakonomics Radio', grade:'B', accuracy:80, claimsChecked:85, trueRate:48, mostlyTrueRate:26, mixedRate:16, mostlyFalseRate:7, falseRate:3 },
+  { id:'rhonda', name:'Rhonda Patrick', initials:'RP', podcast:'Found My Fitness', grade:'B', accuracy:79, claimsChecked:92, trueRate:50, mostlyTrueRate:24, mixedRate:16, mostlyFalseRate:7, falseRate:3 },
+  { id:'layne', name:'Layne Norton', initials:'LN', podcast:'Huberman Lab', grade:'A', accuracy:91, claimsChecked:28, trueRate:68, mostlyTrueRate:18, mixedRate:10, mostlyFalseRate:4, falseRate:0 },
+  { id:'dom', name:"Dom D'Agostino", initials:'DD', podcast:'Found My Fitness', grade:'B', accuracy:82, claimsChecked:22, trueRate:54, mostlyTrueRate:22, mixedRate:18, mostlyFalseRate:4, falseRate:2 },
+  { id:'balaji', name:'Balaji Srinivasan', initials:'BS', podcast:'Lex Fridman Podcast', grade:'C', accuracy:62, claimsChecked:34, trueRate:32, mostlyTrueRate:20, mixedRate:22, mostlyFalseRate:16, falseRate:10 },
+  { id:'aswath', name:'Aswath Damodaran', initials:'AD', podcast:'All-In Podcast', grade:'A', accuracy:92, claimsChecked:18, trueRate:72, mostlyTrueRate:16, mixedRate:8, mostlyFalseRate:4, falseRate:0 },
+  { id:'andy_galpin', name:'Andy Galpin', initials:'AG', podcast:'Huberman Lab', grade:'A', accuracy:88, claimsChecked:26, trueRate:62, mostlyTrueRate:20, mixedRate:12, mostlyFalseRate:4, falseRate:2 },
+  { id:'matt_walker', name:'Matthew Walker', initials:'MW', podcast:"Peter Attia's The Drive", grade:'B', accuracy:76, claimsChecked:30, trueRate:44, mostlyTrueRate:24, mixedRate:18, mostlyFalseRate:10, falseRate:4 },
+  { id:'steve_levitt', name:'Steven Levitt', initials:'SL', podcast:'Freakonomics Radio', grade:'A', accuracy:85, claimsChecked:20, trueRate:55, mostlyTrueRate:25, mixedRate:12, mostlyFalseRate:6, falseRate:2 },
+  { id:'satya', name:'Satya Nadella', initials:'SN', podcast:'Acquired', grade:'B', accuracy:77, claimsChecked:12, trueRate:50, mostlyTrueRate:20, mixedRate:20, mostlyFalseRate:8, falseRate:2 },
+  { id:'jensen', name:'Jensen Huang', initials:'JH', podcast:'Acquired', grade:'B', accuracy:75, claimsChecked:14, trueRate:46, mostlyTrueRate:22, mixedRate:20, mostlyFalseRate:8, falseRate:4 },
+];
+
+const claims = [
+  // ===== ALL-IN PODCAST — E210-E220 =====
+  { id:1, person:'chamath', show:'All-In Podcast', category:'Finance/Economics', text:'"US federal debt interest payments now exceed the entire defense budget — we\'re spending over $1.1 trillion a year on interest alone."', verdict:'true', episode:'All-In E213', date:'Jan 10, 2026', trending:true,
+    context:'Chamath discussed the fiscal trajectory of the US during the economics segment.',
+    evidence:[
+      {source:'US Treasury / CBO', text:'CBO data confirms net interest on federal debt reached approximately $1.05T in FY2025, surpassing defense spending (~$886B). Projected to exceed $1.1T in FY2026.'},
+      {source:'Department of Defense', text:'FY2026 defense budget request is $895 billion, confirming interest payments now exceed defense spending.'}
+    ],
+    broaderContext:'Chamath was making the case that the US is in a fiscal death spiral, arguing that interest expense crowding out discretionary spending is the single biggest economic risk that nobody talks about.',
+    transcript:[
+      {speaker:'Jason', time:'42:15', text:'OK let\'s move to the macro segment. Chamath, you\'ve been doom-pilled on the deficit lately.'},
+      {speaker:'Chamath', time:'42:21', text:'I mean, how can you not be? Look at the numbers. The CBO just released their updated projections and it\'s insane.'},
+      {speaker:'Chamath', time:'42:30', text:'US federal debt interest payments now exceed the entire defense budget — we\'re spending over $1.1 trillion a year on interest alone.', highlight:true},
+      {speaker:'Chamath', time:'42:38', text:'Think about that. We spend more servicing our debt than we spend on the entire military. And nobody is talking about this.'},
+      {speaker:'Sacks', time:'42:45', text:'Well, people are talking about it. I think the issue is nobody\'s doing anything about it.'},
+      {speaker:'Friedberg', time:'42:50', text:'The compounding effect is the scary part. As rates stay elevated, the interest expense just keeps growing. It\'s a doom loop.'},
+    ]},
+  { id:2, person:'sacks', show:'All-In Podcast', category:'Finance/Economics', text:'"Europe\'s entire tech sector combined is worth less than just Apple or just Microsoft individually."', verdict:'mostly-true', episode:'All-In E215', date:'Jan 24, 2026',
+    context:'Sacks argued that European tech regulation has stunted innovation.',
+    evidence:[
+      {source:'Bloomberg / Market Data', text:'As of Jan 2026, Apple market cap ~$3.8T, Microsoft ~$3.2T. The STOXX Europe 600 Technology index total market cap is approximately $1.8T. Broadening to include SAP ($280B), ASML ($340B), etc. brings it to ~$2.5T. Still less than either.'},
+      {source:'Caveat', text:'Depends on definition of "tech sector" — pure software vs. including semiconductor equipment. Core claim directionally correct.'}
+    ]},
+  { id:3, person:'jason', show:'All-In Podcast', category:'Tech/AI', text:'"Over 40% of YC\'s latest batch are AI wrappers — just GPT with a UI on top and no real moat."', verdict:'mixed', episode:'All-In E214', date:'Jan 17, 2026', trending:true,
+    context:'Jason was discussing the AI startup bubble and valuations.',
+    evidence:[
+      {source:'Y Combinator W25 Batch Data', text:'Approximately 60%+ of YC W25 companies are AI-related, but categorizing them as "wrappers" is subjective. Many add proprietary data, fine-tuning, or domain expertise.'},
+      {source:'TechCrunch Analysis', text:'Industry analysts estimate 25-35% of AI startups across accelerators could be classified as thin wrappers. Jason\'s 40% is on the high end.'}
+    ],
+    broaderContext:'Jason was making a broader argument that the AI startup ecosystem is in a bubble. Friedberg pointed out that distribution and domain expertise can be moats even for wrapper-style companies.',
+    transcript:[
+      {speaker:'Jason', time:'51:30', text:'Can we talk about the AI bubble for a second? I\'ve been looking at the latest YC batch and it\'s getting ridiculous.'},
+      {speaker:'Jason', time:'51:37', text:'Over 40% of YC\'s latest batch are AI wrappers — just GPT with a UI on top and no real moat.', highlight:true},
+      {speaker:'Jason', time:'51:44', text:'Like, I saw three different "AI email writer" companies. Three! In the same batch.'},
+      {speaker:'Friedberg', time:'51:52', text:'I think you\'re being a bit reductive. Some of these companies have real domain expertise.'},
+      {speaker:'Chamath', time:'52:00', text:'The question is what happens when OpenAI or Anthropic just builds the feature natively.'},
+      {speaker:'Sacks', time:'52:08', text:'I actually agree with Jason directionally but I\'d put it at more like 25-30%, not 40.'},
+    ]},
+  { id:4, person:'friedberg', show:'All-In Podcast', category:'Science/Health', text:'"Global average temperature in 2025 was 1.55°C above pre-industrial baseline, making it the hottest year on record for the second consecutive year."', verdict:'true', episode:'All-In E216', date:'Feb 1, 2026',
+    context:'Friedberg presented climate data during the science corner segment.',
+    evidence:[
+      {source:'Copernicus Climate Change Service', text:'C3S confirmed 2025 global average temperature was 1.55°C above 1850-1900 baseline, following 2024 at 1.60°C.'},
+      {source:'NASA GISS', text:'NASA independently confirmed 2025 as tied for hottest year on record.'}
+    ]},
+  { id:5, person:'sacks', show:'All-In Podcast', category:'Finance/Economics', text:'"DOGE has already saved taxpayers $100 billion in its first month by cutting government waste."', verdict:'false', episode:'All-In E217', date:'Feb 5, 2026', trending:true,
+    context:'Sacks praised the Department of Government Efficiency\'s early results.',
+    evidence:[
+      {source:'Washington Post / FactCheck.org', text:'DOGE claimed $100B in savings but this includes cancelled contracts already expiring, frozen funds later released by court order, and double-counted items. Independent analyses estimate actual savings at $4-8 billion.'},
+      {source:'CBO', text:'CBO has not validated the $100B claim. Many "savings" were temporary freezes, not permanent cuts.'}
+    ],
+    broaderContext:'Sacks defended DOGE\'s track record during a heated debate. Friedberg pointed out the double-counting methodology.',
+    transcript:[
+      {speaker:'Jason', time:'15:20', text:'DOGE has been in operation about a month now. Sacks, what\'s the report card?'},
+      {speaker:'Sacks', time:'15:27', text:'DOGE has already saved taxpayers $100 billion in its first month by cutting government waste.', highlight:true},
+      {speaker:'Sacks', time:'15:34', text:'That\'s not my number, that\'s their published number.'},
+      {speaker:'Friedberg', time:'15:42', text:'David, I went through their spreadsheet line by line. A huge chunk is contracts already set to expire.'},
+      {speaker:'Chamath', time:'15:52', text:'There\'s also frozen funds that courts have already ordered to be released.'},
+      {speaker:'Sacks', time:'16:00', text:'Even if you haircut the number, the direction of travel is clear.'},
+      {speaker:'Jason', time:'16:08', text:'Even if it\'s 10 billion in real savings, that\'s significant. But the 100 billion number is doing heavy lifting in the PR.'},
+    ]},
+  { id:6, person:'chamath', show:'All-In Podcast', category:'Science/Health', text:'"Ozempic and GLP-1 drugs will reduce US healthcare spending by $500 billion per year within a decade by cutting obesity-related disease."', verdict:'mixed', episode:'All-In E215', date:'Jan 24, 2026',
+    context:'Chamath discussed GLP-1 drugs as a transformative healthcare investment.',
+    evidence:[
+      {source:'Goldman Sachs Research', text:'GS projects GLP-1 drugs could reduce obesity-related healthcare costs by $150-250B annually by 2035. $500B is significantly above consensus.'},
+      {source:'NEJM', text:'Clinical trials show 15-20% weight reduction and cardiovascular benefit, but drug costs ($10-15K/year/patient) partially offset savings.'}
+    ]},
+  { id:7, person:'jason', show:'All-In Podcast', category:'Tech/AI', text:'"Uber is now profitable and has a higher market cap than Ford and GM combined."', verdict:'true', episode:'All-In E213', date:'Jan 10, 2026',
+    context:'Jason discussed the vindication of ride-sharing business models.',
+    evidence:[
+      {source:'Market Data (Jan 2026)', text:'Uber market cap ~$165B. Ford ~$42B, GM ~$52B. Combined ~$94B. Uber exceeded both combined and reported positive GAAP net income.'}
+    ]},
+  { id:8, person:'chamath', show:'All-In Podcast', category:'Finance/Economics', text:'"The top 10% of US taxpayers pay over 75% of all federal income taxes."', verdict:'true', episode:'All-In E210', date:'Oct 3, 2025',
+    context:'Chamath argued against tax increase proposals during a policy debate.',
+    evidence:[
+      {source:'IRS SOI Data / Tax Foundation', text:'For tax year 2022 (latest data), the top 10% of earners paid approximately 76% of all federal income taxes. Chamath\'s claim is accurate.'}
+    ]},
+  { id:9, person:'sacks', show:'All-In Podcast', category:'Tech/AI', text:'"OpenAI is burning through $5 billion a year and still isn\'t profitable even with $2 billion in revenue."', verdict:'mostly-true', episode:'All-In E211', date:'Oct 17, 2025',
+    context:'Sacks criticized OpenAI\'s business model sustainability.',
+    evidence:[
+      {source:'The Information / Bloomberg', text:'OpenAI\'s 2025 revenue run rate reached ~$3.4B by Q3 2025, but operating costs including compute exceeded $5B annually. The company was not yet profitable on a GAAP basis. Sacks\' revenue figure was slightly low.'},
+      {source:'Note', text:'Revenue was closer to $3.4B annualized, not $2B, making Sacks\' figure somewhat dated. The unprofitable claim is correct.'}
+    ]},
+  { id:10, person:'friedberg', show:'All-In Podcast', category:'Science/Health', text:'"Lab-grown meat production costs have dropped 99% since 2013 — from $330,000 per pound to about $30 per pound today."', verdict:'mostly-true', episode:'All-In E217', date:'Feb 5, 2026',
+    context:'Friedberg discussed the future of food technology.',
+    evidence:[
+      {source:'Good Food Institute', text:'The first lab-grown burger in 2013 cost ~$330,000. Current estimates range from $20-50/lb at small scale. The 99% cost reduction is directionally accurate.'}
+    ]},
+  { id:11, person:'jason', show:'All-In Podcast', category:'Finance/Economics', text:'"Apple has more cash on its balance sheet than the GDP of over 100 countries."', verdict:'true', episode:'All-In E212', date:'Oct 31, 2025',
+    context:'Jason discussed Apple\'s financial dominance.',
+    evidence:[
+      {source:'Apple 10-K / World Bank', text:'Apple\'s cash and marketable securities totaled ~$162B. Over 130 countries have GDP below this figure, per World Bank data.'}
+    ]},
+  { id:12, person:'sacks', show:'All-In Podcast', category:'Finance/Economics', text:'"San Francisco has lost 30% of its downtown office workers permanently since the pandemic."', verdict:'mostly-true', episode:'All-In E210', date:'Oct 3, 2025',
+    context:'Sacks discussed the state of San Francisco\'s downtown economy.',
+    evidence:[
+      {source:'Kastle Systems / SF Chronicle', text:'Kastle back-to-work data shows SF office occupancy at ~44% of pre-pandemic levels as of late 2025, implying ~56% decline on any given day. However, "permanent" loss of workers is estimated at 25-35% depending on methodology. Sacks\' 30% figure is within range.'}
+    ]},
+  { id:13, person:'friedberg', show:'All-In Podcast', category:'Tech/AI', text:'"Anthropic\'s Claude now scores higher than GPT-4 on most major benchmarks."', verdict:'mostly-true', episode:'All-In E218', date:'Feb 7, 2026',
+    context:'Friedberg compared frontier AI models during the tech segment.',
+    evidence:[
+      {source:'LMSYS Chatbot Arena / Independent Benchmarks', text:'Claude 3.5 Sonnet and Claude 3 Opus consistently ranked at or above GPT-4 Turbo on LMSYS and several coding/reasoning benchmarks. However, GPT-4o maintained advantages on certain multimodal tasks.'}
+    ]},
+  { id:14, person:'chamath', show:'All-In Podcast', category:'Finance/Economics', text:'"China holds over $3 trillion in US Treasury bonds, giving them massive leverage over US economic policy."', verdict:'false', episode:'All-In E211', date:'Oct 17, 2025',
+    context:'Chamath discussed US-China economic tensions.',
+    evidence:[
+      {source:'US Treasury TIC Data', text:'China\'s holdings of US Treasuries have declined to approximately $770 billion as of mid-2025, down from a peak of ~$1.3T in 2013. The $3T figure is significantly overstated.'},
+      {source:'Note', text:'China\'s total foreign exchange reserves are ~$3.2T, but most is not in US Treasuries. Chamath appears to have confused total reserves with Treasury holdings.'}
+    ]},
+  { id:15, person:'jason', show:'All-In Podcast', category:'Tech/AI', text:'"There are now more AI startups in the US than there were total startups in 2019."', verdict:'false', episode:'All-In E216', date:'Feb 1, 2026',
+    context:'Jason argued the AI boom was unprecedented.',
+    evidence:[
+      {source:'Census Bureau / PitchBook', text:'The US had approximately 3.5 million new business applications in 2019. AI-related startups, even broadly defined, number around 15,000-25,000. Jason\'s claim overstates by two orders of magnitude.'}
+    ]},
+  { id:16, person:'aswath', show:'All-In Podcast', category:'Finance/Economics', text:'"The S&P 500 is trading at 22x forward earnings, which is about 30% above the 25-year historical average of 17x."', verdict:'true', episode:'All-In E214', date:'Jan 17, 2026',
+    context:'Aswath Damodaran appeared as a guest to discuss equity valuations.',
+    evidence:[
+      {source:'FactSet / S&P Capital IQ', text:'The forward P/E for the S&P 500 was approximately 21.8x as of mid-January 2026. The 25-year average is ~16.8x. The 30% premium calculation is accurate.'}
+    ]},
+  { id:17, person:'aswath', show:'All-In Podcast', category:'Finance/Economics', text:'"The Magnificent Seven now represent about 33% of the S&P 500 by market cap — the highest concentration in a generation."', verdict:'true', episode:'All-In E214', date:'Jan 17, 2026',
+    context:'Damodaran discussed market concentration risks.',
+    evidence:[
+      {source:'S&P Global', text:'As of January 2026, the Mag Seven (Apple, Microsoft, Nvidia, Amazon, Alphabet, Meta, Tesla) represented approximately 32-34% of S&P 500 market cap, exceeding concentration levels seen even during the dot-com era.'}
+    ]},
+  { id:18, person:'sacks', show:'All-In Podcast', category:'Finance/Economics', text:'"The US dollar has lost 25% of its purchasing power in just the last five years due to inflation."', verdict:'mostly-false', episode:'All-In E212', date:'Oct 31, 2025',
+    context:'Sacks argued that inflation has been more damaging than reported.',
+    evidence:[
+      {source:'BLS CPI Data', text:'Cumulative CPI inflation from Oct 2020 to Oct 2025 was approximately 22%. However, "purchasing power loss" of the dollar is about 18% — meaning $1 in 2020 buys about $0.82 in 2025 goods. Sacks\' 25% overstates by a meaningful margin.'},
+      {source:'Note', text:'The distinction matters — 22% cumulative inflation does not equal 22% purchasing power loss. The math gives ~18%.'}
+    ]},
+  { id:19, person:'friedberg', show:'All-In Podcast', category:'Science/Health', text:'"CRISPR gene therapy for sickle cell disease costs $2.2 million per patient — making it the most expensive drug ever approved by the FDA."', verdict:'mostly-true', episode:'All-In E213', date:'Jan 10, 2026',
+    context:'Friedberg discussed the economics of gene therapy.',
+    evidence:[
+      {source:'Vertex Pharmaceuticals / FDA', text:'Casgevy (exagamglogene autotemcel) was priced at $2.2M per patient. However, Lenmeldy for MLD was approved at $4.25M in 2024, making it the most expensive. Friedberg\'s price is correct but "most expensive ever" was already surpassed.'}
+    ]},
+  { id:20, person:'chamath', show:'All-In Podcast', category:'Finance/Economics', text:'"Private equity now manages over $8 trillion in assets globally, more than double what it was just seven years ago."', verdict:'true', episode:'All-In E218', date:'Feb 7, 2026',
+    context:'Chamath discussed the growth of alternative investments.',
+    evidence:[
+      {source:'Preqin / McKinsey Global Private Markets Review', text:'Global PE AUM reached approximately $8.2T by end of 2025, up from ~$3.7T in 2018. The doubling claim is accurate.'}
+    ]},
+
+  // ===== HUBERMAN LAB — E308-E320 =====
+  { id:21, person:'huberman', show:'Huberman Lab', category:'Science/Health', text:'"Cold exposure at 50°F for 11 minutes per week, spread across 2-4 sessions, has been shown to increase dopamine levels by 250-300% above baseline."', verdict:'mostly-true', episode:'Huberman Lab #312', date:'Jan 14, 2026', trending:true,
+    context:'Huberman discussed cold exposure protocols during a deep-dive on dopamine regulation.',
+    evidence:[
+      {source:'European Journal of Applied Physiology (Šrámek et al., 2000)', text:'Cold water immersion at 14°C showed a 250% increase in plasma dopamine. The study used continuous immersion, not split sessions.'},
+      {source:'Note', text:'The 11-minute/week protocol is Huberman\'s practical recommendation extrapolated from multiple studies.'}
+    ],
+    broaderContext:'Part of Huberman\'s comprehensive dopamine episode where he contrasted cold exposure with caffeine (~150% dopamine increase) to emphasize the magnitude.',
+    transcript:[
+      {speaker:'Huberman', time:'28:10', text:'So let\'s talk about what I think is the most underutilized tool for dopamine optimization — deliberate cold exposure.'},
+      {speaker:'Huberman', time:'28:18', text:'Most people hear "cold plunge" and think it\'s a recovery tool or some macho biohacker thing. But the data on dopamine is remarkable.'},
+      {speaker:'Huberman', time:'28:27', text:'Cold exposure at 50°F for 11 minutes per week, spread across 2-4 sessions, has been shown to increase dopamine levels by 250-300% above baseline.', highlight:true},
+      {speaker:'Huberman', time:'28:38', text:'That\'s comparable to certain pharmaceutical interventions. Caffeine gives you about 150%. So roughly double your morning coffee.'},
+      {speaker:'Huberman', time:'28:50', text:'And the key thing is, this increase is long-lasting. The Šrámek et al study showed elevated dopamine for 2-3 hours after exposure.'},
+      {speaker:'Huberman', time:'29:02', text:'The protocol I recommend — 11 minutes total per week, broken into 2 to 4 sessions — is my synthesis of the literature, not from one single study.'},
+    ]},
+  { id:22, person:'huberman', show:'Huberman Lab', category:'Science/Health', text:'"Viewing morning sunlight within the first hour of waking for 10 minutes has been shown to advance your circadian clock and improve sleep onset by 30-45 minutes."', verdict:'true', episode:'Huberman Lab #314', date:'Jan 28, 2026',
+    context:'Huberman revisited his foundational light exposure protocol.',
+    evidence:[
+      {source:'Journal of Biological Rhythms', text:'Bright light exposure (>10,000 lux) in the morning advances circadian phase. Sleep onset improvements of 20-45 minutes are well-documented.'},
+      {source:'Duffy & Czeisler, 2009', text:'Systematic review confirms morning bright light as an effective circadian intervention.'}
+    ]},
+  { id:23, person:'huberman', show:'Huberman Lab', category:'Science/Health', text:'"Creatine supplementation at 5g per day has robust evidence for cognitive benefits — improving working memory by about 15%."', verdict:'mostly-true', episode:'Huberman Lab #316', date:'Feb 6, 2026',
+    context:'Huberman discussed nootropic supplements.',
+    evidence:[
+      {source:'Avgerinos et al., 2018', text:'Meta-analysis found creatine improved short-term memory and reasoning, particularly under stress or sleep deprivation. 15% is within reported ranges but represents upper estimates.'},
+      {source:'Forbes et al., 2022', text:'Supports cognitive benefits, particularly in vegetarians and during cognitive demands.'}
+    ]},
+  { id:24, person:'huberman', show:'Huberman Lab', category:'Science/Health', text:'"Non-sleep deep rest (NSDR) protocols of 10-20 minutes have been shown to restore dopamine levels by up to 65% in the basal ganglia."', verdict:'mostly-true', episode:'Huberman Lab #308', date:'Oct 7, 2025',
+    context:'Huberman promoted NSDR as a tool for focus and energy restoration.',
+    evidence:[
+      {source:'Kjaer et al., 2002 (Yoga Nidra study)', text:'A yoga nidra session showed a 65% increase in endogenous dopamine release in the striatum via PET scan. However, this was a single small study (n=8) and hasn\'t been widely replicated.'},
+      {source:'Note', text:'The 65% figure comes from one study. "Restoring" dopamine implies depletion, which isn\'t precisely what the study measured — it measured increased release.'}
+    ]},
+  { id:25, person:'huberman', show:'Huberman Lab', category:'Nutrition', text:'"Consuming 2g of EPA omega-3 fatty acids per day has been shown to have antidepressant effects comparable to low-dose SSRIs in some clinical trials."', verdict:'mostly-true', episode:'Huberman Lab #309', date:'Oct 14, 2025',
+    context:'Huberman discussed nutritional psychiatry and mood-enhancing supplements.',
+    evidence:[
+      {source:'Liao et al., 2019 (Meta-analysis)', text:'High-EPA omega-3 supplementation (≥1g EPA) showed significant antidepressant effects. Some trials found effects comparable to low-dose fluoxetine, though head-to-head comparisons are limited.'},
+      {source:'Jazayeri et al., 2008', text:'Direct comparison study found EPA (1g/day) + fluoxetine was more effective than either alone. EPA alone was comparable to fluoxetine alone for mild-moderate depression.'}
+    ]},
+  { id:26, person:'layne', show:'Huberman Lab', category:'Nutrition', text:'"There\'s no meaningful difference in muscle protein synthesis between consuming 20g vs 100g of protein in a single meal — your body can use it all."', verdict:'mostly-false', episode:'Huberman Lab #311', date:'Nov 4, 2025',
+    context:'Layne Norton appeared as a guest to discuss protein metabolism.',
+    evidence:[
+      {source:'Note', text:'Layne\'s own later research actually challenged this claim. A 2023 study by Trommelen et al. showed that 100g of protein resulted in greater whole-body protein synthesis than 25g, contradicting the "muscle full" ceiling theory.'},
+      {source:'Trommelen et al., 2023', text:'Found that ingesting 100g protein after exercise resulted in a more prolonged anabolic response than 25g. However, the marginal benefit per gram decreases significantly above 40g.'}
+    ],
+    broaderContext:'This was a nuanced discussion where Layne was actually revising his previous position. He had traditionally advocated for 30-40g per meal based on older leucine threshold data, but acknowledged newer research showing the body can utilize more. His phrasing was slightly misleading.',
+    transcript:[
+      {speaker:'Huberman', time:'1:12:30', text:'So Layne, what about this idea that there\'s a cap on protein per meal? Like 30 grams and the rest is wasted?'},
+      {speaker:'Layne', time:'1:12:38', text:'So this is actually where I\'ve had to update my thinking based on newer data.'},
+      {speaker:'Layne', time:'1:12:44', text:'There\'s no meaningful difference in muscle protein synthesis between consuming 20g vs 100g of protein in a single meal — your body can use it all.', highlight:true},
+      {speaker:'Huberman', time:'1:12:52', text:'Wait, really? Because I thought the leucine threshold data was pretty clear on the 30-40g range.'},
+      {speaker:'Layne', time:'1:13:00', text:'The acute MPS response plateaus around 40g, but the Trommelen study showed the anabolic response to 100g extends over many hours. So the body is still using it.'},
+      {speaker:'Layne', time:'1:13:12', text:'What I should be more precise about is that the per-gram efficiency drops. You get diminishing returns, but it\'s not "wasted."'},
+    ]},
+  { id:27, person:'huberman', show:'Huberman Lab', category:'Science/Health', text:'"Alcohol consumption, even one or two drinks per week, has been definitively shown to be a carcinogen with no safe level."', verdict:'mostly-true', episode:'Huberman Lab #310', date:'Oct 21, 2025',
+    context:'Huberman discussed the health effects of alcohol.',
+    evidence:[
+      {source:'WHO / IARC', text:'The WHO classifies alcohol as a Group 1 carcinogen. Multiple studies confirm increased cancer risk even at low consumption levels.'},
+      {source:'Lancet (GBD Study, 2018)', text:'The Global Burden of Disease study found that the safest level of alcohol consumption is zero. However, "definitively" overstates the certainty for very low consumption levels where effect sizes are small.'}
+    ]},
+  { id:28, person:'andy_galpin', show:'Huberman Lab', category:'Science/Health', text:'"VO2 max is the single strongest predictor of all-cause mortality — stronger than smoking, hypertension, or diabetes as independent risk factors."', verdict:'true', episode:'Huberman Lab #313', date:'Jan 21, 2026',
+    context:'Andy Galpin appeared as a guest to discuss exercise physiology.',
+    evidence:[
+      {source:'Mandsager et al., 2018 (JAMA)', text:'Study of 122,007 patients found that cardiorespiratory fitness was inversely associated with all-cause mortality with no observed upper limit of benefit. Low fitness carried greater risk than smoking, diabetes, or hypertension.'},
+      {source:'Kodama et al., 2009', text:'Meta-analysis confirmed that each 1-MET increase in VO2 max was associated with 13% reduction in all-cause mortality and 15% reduction in cardiovascular events.'}
+    ]},
+  { id:29, person:'huberman', show:'Huberman Lab', category:'Science/Health', text:'"The supplement tongkat ali has been shown to increase free testosterone by 37% in healthy males within one month."', verdict:'mixed', episode:'Huberman Lab #315', date:'Feb 3, 2026',
+    context:'Huberman discussed evidence-based supplements for hormonal health.',
+    evidence:[
+      {source:'Talbott et al., 2013', text:'A study of stressed adults found tongkat ali supplementation improved testosterone levels by ~37% and reduced cortisol. However, this was in moderately stressed individuals with suboptimal baseline levels, not healthy males with normal testosterone.'},
+      {source:'Systematic Review (Thu et al., 2017)', text:'Multiple studies show varying testosterone effects, with stronger results in hypogonadal or stressed populations. Effects in healthy eugonadal males are more modest (5-15%).'}
+    ]},
+  { id:30, person:'huberman', show:'Huberman Lab', category:'Nutrition', text:'"Consuming fermented foods — four to six servings per day — has been shown to increase gut microbiome diversity more effectively than a high-fiber diet."', verdict:'true', episode:'Huberman Lab #317', date:'Feb 7, 2026',
+    context:'Huberman discussed gut health and the gut-brain axis.',
+    evidence:[
+      {source:'Sonnenburg et al., 2021 (Cell)', text:'Stanford study of 36 adults over 10 weeks found high-fermented-food diet (6 servings/day) significantly increased microbiota diversity, while high-fiber diet did not. This is a landmark study in the field.'}
+    ]},
+  { id:31, person:'andy_galpin', show:'Huberman Lab', category:'Science/Health', text:'"Zone 2 cardio for 150-180 minutes per week is the minimum effective dose for meaningful improvements in mitochondrial function."', verdict:'true', episode:'Huberman Lab #313', date:'Jan 21, 2026',
+    context:'Galpin outlined his exercise prescription framework.',
+    evidence:[
+      {source:'ACSM Guidelines / Iannetta et al., 2020', text:'150 minutes of moderate-intensity exercise per week is the established minimum for cardiovascular and metabolic benefits. Zone 2 specifically targets fat oxidation and mitochondrial biogenesis.'}
+    ]},
+
+  // ===== LEX FRIDMAN PODCAST — E432-E442 =====
+  { id:32, person:'lex', show:'Lex Fridman Podcast', category:'Tech/AI', text:'"GPT-5 class models are estimated to have been trained on over 10 trillion tokens of text data."', verdict:'mostly-true', episode:'Lex Fridman #438', date:'Feb 3, 2026',
+    context:'Lex discussed scaling laws and the future of AI.',
+    evidence:[
+      {source:'Epoch AI Research', text:'Estimates for frontier model training data range from 5-15 trillion tokens. GPT-4 reportedly used ~13 trillion tokens. 10T+ is a reasonable estimate.'}
+    ]},
+  { id:33, person:'lex', show:'Lex Fridman Podcast', category:'Tech/AI', text:'"The Transformer architecture paper \'Attention Is All You Need\' has now been cited over 140,000 times, making it one of the most cited CS papers ever."', verdict:'true', episode:'Lex Fridman #436', date:'Jan 20, 2026',
+    context:'Lex discussed the historical significance of the Transformer architecture.',
+    evidence:[
+      {source:'Google Scholar', text:'As of early 2026, Vaswani et al. (2017) shows approximately 145,000+ citations.'}
+    ]},
+  { id:34, person:'balaji', show:'Lex Fridman Podcast', category:'Tech/AI', text:'"Bitcoin has outperformed every other asset class over every 4-year rolling period since its inception."', verdict:'mostly-false', episode:'Lex Fridman #434', date:'Nov 18, 2025',
+    context:'Balaji Srinivasan appeared as a guest to discuss crypto and decentralization.',
+    evidence:[
+      {source:'Curvo / Backtest Data', text:'Bitcoin underperformed the S&P 500 in several 4-year windows, notably 2017-2021 (depending on exact start date) and Dec 2017 to Dec 2021. It also had multiple rolling 4-year periods with negative returns (2014-2018).'},
+      {source:'Note', text:'Bitcoin has had extraordinary long-term returns but claiming it outperformed "every" asset class in "every" 4-year period is demonstrably false.'}
+    ],
+    broaderContext:'Balaji was making his case for Bitcoin as the ultimate store of value. Lex pushed back gently, asking about the 2018 bear market period, and Balaji acknowledged "there are windows" but argued the trend was clear.',
+    transcript:[
+      {speaker:'Lex', time:'45:20', text:'So let\'s talk about the investment case for Bitcoin specifically.'},
+      {speaker:'Balaji', time:'45:26', text:'Sure. The data speaks for itself. Bitcoin has outperformed every other asset class over every 4-year rolling period since its inception.', highlight:true},
+      {speaker:'Lex', time:'45:35', text:'Every? What about the 2018 crash? If you bought at the 2017 peak...'},
+      {speaker:'Balaji', time:'45:42', text:'OK there are windows where if you pick the absolute top, sure. But if you zoom out to any reasonable time horizon, the returns are unmatched.'},
+      {speaker:'Lex', time:'45:50', text:'But you said "every 4-year period." That\'s a pretty specific claim.'},
+      {speaker:'Balaji', time:'45:55', text:'Fair. Let me rephrase — over most 4-year periods, particularly if you dollar-cost average, Bitcoin has been the top-performing asset.'},
+    ]},
+  { id:35, person:'lex', show:'Lex Fridman Podcast', category:'Tech/AI', text:'"DeepMind\'s AlphaFold has predicted the structures of essentially all 200 million known proteins."', verdict:'true', episode:'Lex Fridman #435', date:'Dec 2, 2025',
+    context:'Lex discussed AI\'s impact on biology.',
+    evidence:[
+      {source:'DeepMind / Nature', text:'AlphaFold DB (released 2022) contains predicted structures for ~214 million proteins covering nearly every known protein sequence. This is accurate.'}
+    ]},
+  { id:36, person:'balaji', show:'Lex Fridman Podcast', category:'Finance/Economics', text:'"The US government spends more on Medicare and Social Security than the entire GDP of Germany."', verdict:'mostly-true', episode:'Lex Fridman #434', date:'Nov 18, 2025',
+    context:'Balaji discussed US entitlement spending.',
+    evidence:[
+      {source:'CBO / World Bank', text:'US combined Medicare + Social Security spending in FY2025 was approximately $3.5T. Germany\'s GDP is approximately $4.1T. Close but Balaji\'s claim slightly overstates. However, adding Medicaid brings total entitlement spending above $4T.'},
+      {source:'Note', text:'Depends on whether you include Medicaid and other health programs. Core Medicare + SS alone falls slightly short of Germany\'s GDP.'}
+    ]},
+  { id:37, person:'lex', show:'Lex Fridman Podcast', category:'Science/Health', text:'"The human brain consumes about 20% of the body\'s total energy despite being only 2% of body weight."', verdict:'true', episode:'Lex Fridman #437', date:'Jan 6, 2026',
+    context:'Lex discussed neuroscience and consciousness with a guest neuroscientist.',
+    evidence:[
+      {source:'Raichle & Gusnard, 2002 (PNAS)', text:'The brain accounts for ~20% of basal metabolic rate despite being ~2% of body mass. This is one of the most well-established facts in neuroscience.'}
+    ]},
+  { id:38, person:'lex', show:'Lex Fridman Podcast', category:'History', text:'"The Library of Alexandria contained an estimated 400,000 to 700,000 scrolls at its peak."', verdict:'true', episode:'Lex Fridman #432', date:'Oct 6, 2025',
+    context:'Lex discussed ancient knowledge and its loss during a history-themed episode.',
+    evidence:[
+      {source:'Various historical sources / Casson (2001)', text:'Ancient accounts vary — Seneca cited 400,000 volumes, while other sources mention up to 700,000. Modern historians generally accept 400,000-700,000 as a reasonable range.'}
+    ]},
+  { id:39, person:'lex', show:'Lex Fridman Podcast', category:'Tech/AI', text:'"Nvidia\'s market cap briefly exceeded $3.5 trillion in 2025, making it the most valuable company in the world."', verdict:'true', episode:'Lex Fridman #439', date:'Feb 6, 2026',
+    context:'Lex discussed the AI hardware boom.',
+    evidence:[
+      {source:'Market Data', text:'Nvidia briefly surpassed Apple as the most valuable public company in late 2025, reaching a market cap above $3.5T before settling back.'}
+    ]},
+  { id:40, person:'huberman', show:'Lex Fridman Podcast', category:'Science/Health', text:'"Sauna use 4 times per week for 20 minutes at 170°F+ is associated with a 40% reduction in all-cause mortality."', verdict:'mostly-true', episode:'Lex Fridman #440', date:'Feb 7, 2026',
+    context:'Huberman appeared as a guest on Lex Fridman to discuss longevity protocols.',
+    evidence:[
+      {source:'Laukkanen et al., 2015 (JAMA Internal Medicine)', text:'Finnish sauna study of 2,315 men found 4-7 sauna sessions/week associated with 40% lower all-cause mortality vs. 1 session/week. However, this is observational/correlational, not causal.'},
+      {source:'Note', text:'The study is robust but observational. Confounders (lifestyle, SES, healthy user bias) could explain some of the effect. Huberman did not mention these caveats.'}
+    ]},
+  { id:41, person:'lex', show:'Lex Fridman Podcast', category:'History', text:'"The Apollo program cost about $25 billion in 1960s dollars, which is roughly $200 billion adjusted for inflation today."', verdict:'mostly-true', episode:'Lex Fridman #433', date:'Oct 20, 2025',
+    context:'Lex discussed the economics of space exploration.',
+    evidence:[
+      {source:'NASA Historical Budget / BLS Inflation Calculator', text:'Apollo cost approximately $25.4B (1973 dollars). Adjusted to 2025 dollars, this is approximately $175-210B depending on the deflator used. Lex\'s $200B figure is within the reasonable range.'}
+    ]},
+  { id:42, person:'balaji', show:'Lex Fridman Podcast', category:'Tech/AI', text:'"India now produces more software engineers per year than the US and Europe combined."', verdict:'mixed', episode:'Lex Fridman #441', date:'Feb 7, 2026',
+    context:'Balaji discussed India\'s tech ecosystem.',
+    evidence:[
+      {source:'NASSCOM / HackerRank', text:'India produces approximately 1.5 million engineering graduates per year, of which perhaps 500-600K are in IT/CS. The US produces ~110K CS graduates annually, Europe ~200-300K. India likely produces more total engineering graduates, but "software engineers" specifically is harder to compare due to quality and specialization differences.'}
+    ]},
+
+  // ===== PETER ATTIA'S THE DRIVE — E285-E296 =====
+  { id:43, person:'attia', show:"Peter Attia's The Drive", category:'Science/Health', text:'"Cardiovascular disease remains the #1 killer globally, responsible for approximately 17.9 million deaths per year."', verdict:'true', episode:'The Drive #285', date:'Oct 6, 2025',
+    context:'Attia opened his "Medicine 3.0" series with an overview of mortality statistics.',
+    evidence:[
+      {source:'WHO Global Health Estimates', text:'CVD caused approximately 17.9 million deaths in 2019 (latest comprehensive data), representing 32% of all global deaths. This figure is widely cited and accurate.'}
+    ]},
+  { id:44, person:'attia', show:"Peter Attia's The Drive", category:'Science/Health', text:'"ApoB is a far better predictor of cardiovascular risk than LDL cholesterol — it captures the total atherogenic particle burden."', verdict:'true', episode:'The Drive #286', date:'Oct 13, 2025',
+    context:'Attia made his case for ApoB testing over standard lipid panels.',
+    evidence:[
+      {source:'Sniderman et al., 2019 (JAMA Cardiology)', text:'ApoB was shown to be a more accurate marker of cardiovascular risk than LDL-C in a meta-analysis of >850,000 individuals. The mechanistic basis — that ApoB counts all atherogenic particles — is well-established.'},
+      {source:'European Atherosclerosis Society', text:'EAS consensus statement (2020) endorsed ApoB as a primary target for lipid-lowering therapy.'}
+    ]},
+  { id:45, person:'attia', show:"Peter Attia's The Drive", category:'Science/Health', text:'"The average American adult gets only 6.8 hours of sleep per night, well below the 7-9 hours recommended."', verdict:'true', episode:'The Drive #288', date:'Oct 27, 2025',
+    context:'Attia discussed sleep as a pillar of longevity.',
+    evidence:[
+      {source:'CDC / Gallup', text:'CDC BRFSS data and Gallup polls consistently show American adults average approximately 6.8 hours of sleep per night, with about 35% getting less than 7 hours.'}
+    ]},
+  { id:46, person:'matt_walker', show:"Peter Attia's The Drive", category:'Science/Health', text:'"Sleeping less than 6 hours per night increases your risk of Alzheimer\'s by about 30%."', verdict:'mostly-true', episode:'The Drive #289', date:'Nov 3, 2025',
+    context:'Matthew Walker appeared as a guest to discuss sleep and neurodegeneration.',
+    evidence:[
+      {source:'Sabia et al., 2021 (Nature Communications)', text:'Whitehall II study found that persistent short sleep (≤6 hours) in midlife was associated with a 30% increased risk of dementia. However, this is observational and the specific Alzheimer\'s (vs. all-cause dementia) risk varies by study.'},
+      {source:'Note', text:'Walker\'s claim is in the right ballpark. Some studies show higher risk (up to 70%), but 30% for Alzheimer\'s specifically is a conservative, defensible estimate.'}
+    ]},
+  { id:47, person:'attia', show:"Peter Attia's The Drive", category:'Science/Health', text:'"Resistance training is the most effective intervention we have for preventing age-related muscle loss — sarcopenia affects about 10% of adults over 60."', verdict:'true', episode:'The Drive #290', date:'Nov 10, 2025',
+    context:'Attia discussed exercise as medicine for aging.',
+    evidence:[
+      {source:'Cruz-Jentoft et al., 2019 (Lancet)', text:'Sarcopenia prevalence estimates range from 5-13% in adults 60-70 and up to 50% in those over 80. 10% for 60+ is a reasonable average. Resistance training is the primary evidence-based intervention.'}
+    ]},
+  { id:48, person:'attia', show:"Peter Attia's The Drive", category:'Nutrition', text:'"Time-restricted eating doesn\'t provide benefits beyond caloric restriction — the weight loss comes from eating less, not from the timing window."', verdict:'mostly-true', episode:'The Drive #291', date:'Nov 17, 2025',
+    context:'Attia evaluated intermittent fasting claims.',
+    evidence:[
+      {source:'Liu et al., 2022 (NEJM)', text:'RCT of 139 obese patients found time-restricted eating (8-hour window) did not produce greater weight loss than caloric restriction alone over 12 months. Multiple subsequent trials have confirmed this.'},
+      {source:'Caveat', text:'Some studies show modest metabolic benefits (insulin sensitivity) from time-restricted eating independent of calories, particularly in certain populations. The claim slightly overstates the certainty.'}
+    ]},
+  { id:49, person:'attia', show:"Peter Attia's The Drive", category:'Science/Health', text:'"Rapamycin is the only pharmacological intervention consistently shown to extend lifespan in every organism tested, from yeast to mice."', verdict:'true', episode:'The Drive #292', date:'Dec 1, 2025',
+    context:'Attia discussed longevity drugs and the mTOR pathway.',
+    evidence:[
+      {source:'ITP (Interventions Testing Program) / Harrison et al., 2009', text:'Rapamycin extended lifespan in mice by 9-14% even when started late in life. It has shown lifespan extension in yeast, worms, flies, and mice — the broadest cross-species evidence of any compound.'}
+    ]},
+  { id:50, person:'matt_walker', show:"Peter Attia's The Drive", category:'Science/Health', text:'"After just one night of poor sleep, your natural killer cell activity drops by 70%, significantly compromising immune function."', verdict:'mixed', episode:'The Drive #289', date:'Nov 3, 2025',
+    context:'Walker discussed the immunological consequences of sleep deprivation.',
+    evidence:[
+      {source:'Irwin et al., 1996', text:'The landmark study found a ~72% reduction in NK cell activity after partial sleep deprivation (4 hours of sleep). However, this was after severe restriction, not merely "poor sleep." A single night of moderately poor sleep (5-6 hours) shows more modest reductions (~20-30%).'},
+      {source:'Note', text:'Walker\'s 70% figure comes from severe sleep restriction studies. Generalizing to "poor sleep" (which most people interpret as 5-6 hours) overstates the effect.'}
+    ],
+    transcript:[
+      {speaker:'Attia', time:'34:10', text:'Let\'s talk about the immune system consequences. How quickly does sleep loss affect immunity?'},
+      {speaker:'Walker', time:'34:16', text:'Incredibly fast. After just one night of poor sleep, your natural killer cell activity drops by 70%, significantly compromising immune function.', highlight:true},
+      {speaker:'Attia', time:'34:25', text:'70%? That\'s a dramatic number. Is that from the Irwin study?'},
+      {speaker:'Walker', time:'34:30', text:'Yes, the Michael Irwin data. And these are your first line of defense against cancer cells and virally infected cells.'},
+      {speaker:'Attia', time:'34:38', text:'But that was severe restriction — 4 hours, right? What about someone who gets 6 hours instead of their usual 8?'},
+      {speaker:'Walker', time:'34:45', text:'The dose-response is real. Even modest restriction shows meaningful reductions, though perhaps not 70%. That\'s the severe end.'},
+    ]},
+  { id:51, person:'attia', show:"Peter Attia's The Drive", category:'Science/Health', text:'"Type 2 diabetes is now the fastest-growing chronic disease globally, affecting over 530 million adults."', verdict:'true', episode:'The Drive #293', date:'Dec 8, 2025',
+    context:'Attia discussed metabolic health trends.',
+    evidence:[
+      {source:'IDF Diabetes Atlas, 10th Ed', text:'The IDF estimates 537 million adults (20-79) had diabetes in 2021, projected to reach 643 million by 2030. ~90% is Type 2. It is one of the fastest-growing chronic conditions.'}
+    ]},
+  { id:52, person:'attia', show:"Peter Attia's The Drive", category:'Science/Health', text:'"Zone 2 exercise increases mitochondrial density and fat oxidation capacity more effectively than high-intensity interval training for metabolic health."', verdict:'mostly-true', episode:'The Drive #294', date:'Dec 15, 2025',
+    context:'Attia discussed his exercise framework emphasizing zone 2 training.',
+    evidence:[
+      {source:'San-Millán & Brooks, 2018', text:'Zone 2 training specifically targets type I muscle fiber mitochondrial function and fat oxidation. HIIT improves VO2 max more effectively but Zone 2 is superior for mitochondrial density improvements in studies of metabolic disease.'},
+      {source:'Note', text:'The comparison depends on the population. In trained athletes, HIIT and Zone 2 have complementary benefits. In metabolically unhealthy populations, Attia\'s claim is well-supported.'}
+    ]},
+  { id:53, person:'attia', show:"Peter Attia's The Drive", category:'Nutrition', text:'"Dietary cholesterol has a minimal effect on blood cholesterol levels for most people — the response is highly individual, with about 25% being hyper-responders."', verdict:'true', episode:'The Drive #295', date:'Jan 6, 2026',
+    context:'Attia discussed nutrition myths around cholesterol.',
+    evidence:[
+      {source:'Dietary Guidelines Advisory Committee / McNamara, 2000', text:'The 2015-2020 Dietary Guidelines removed the 300mg/day cholesterol limit, acknowledging that dietary cholesterol has a modest impact on serum cholesterol for most individuals. Approximately 15-25% of the population are "hyper-responders."'}
+    ]},
+  { id:54, person:'attia', show:"Peter Attia's The Drive", category:'Science/Health', text:'"Grip strength is one of the strongest predictors of all-cause mortality — each 5kg decrease in grip strength is associated with a 17% increase in mortality risk."', verdict:'true', episode:'The Drive #296', date:'Jan 13, 2026',
+    context:'Attia discussed functional strength markers for longevity.',
+    evidence:[
+      {source:'Leong et al., 2015 (Lancet — PURE study)', text:'The PURE study of 139,691 adults in 17 countries found each 5kg decrease in grip strength was associated with 17% increased all-cause mortality, 17% increased CV mortality, and 7% increased risk of MI.'}
+    ]},
+
+  // ===== ACQUIRED — E57-E67 =====
+  { id:55, person:'ben', show:'Acquired', category:'History', text:'"When NVIDIA went public in 1999, their IPO raised $42 million at a $625 million valuation — the company is now worth over 5,000 times that."', verdict:'true', episode:'Acquired S14E57', date:'Oct 8, 2025',
+    context:'Ben and David covered the NVIDIA story from founding to AI dominance.',
+    evidence:[
+      {source:'NVIDIA SEC Filings / Market Data', text:'NVIDIA IPO was January 22, 1999, raising $42M at ~$625M valuation. At $3.5T+ market cap, that\'s approximately 5,600x, consistent with Ben\'s claim.'}
+    ]},
+  { id:56, person:'david_r', show:'Acquired', category:'History', text:'"Jensen Huang was one of the youngest CEO founders of a public semiconductor company — he was just 30 when he co-founded NVIDIA in 1993."', verdict:'true', episode:'Acquired S14E57', date:'Oct 8, 2025',
+    context:'David discussed Jensen Huang\'s background.',
+    evidence:[
+      {source:'NVIDIA Corporate History', text:'Jensen Huang was born in 1963 and co-founded NVIDIA in January 1993 at age 30. He has served as CEO continuously since founding — the longest-tenured CEO in the semiconductor industry.'}
+    ]},
+  { id:57, person:'ben', show:'Acquired', category:'Finance/Economics', text:'"Costco\'s membership renewal rate is 93% in the US and Canada — one of the highest customer retention rates of any business."', verdict:'true', episode:'Acquired S14E59', date:'Nov 5, 2025',
+    context:'Ben and David covered Costco\'s business model.',
+    evidence:[
+      {source:'Costco 10-K / Earnings Reports', text:'Costco consistently reports US/Canada membership renewal rates of 92.9-93.2%. This figure has been stable for years and is indeed among the highest retention rates across industries.'}
+    ]},
+  { id:58, person:'david_r', show:'Acquired', category:'Finance/Economics', text:'"Amazon Web Services started as an internal project to standardize Amazon\'s infrastructure — it wasn\'t originally intended to be a revenue-generating product."', verdict:'mostly-true', episode:'Acquired S14E60', date:'Nov 19, 2025',
+    context:'David discussed the origins of AWS.',
+    evidence:[
+      {source:'Brad Stone, "The Everything Store" / Andy Jassy interviews', text:'AWS originated from Amazon\'s efforts to standardize and decouple their infrastructure. However, Bezos and others have stated there was always a vision for external services. The "internal project first" narrative is somewhat simplified — it was more of a parallel development.'}
+    ]},
+  { id:59, person:'ben', show:'Acquired', category:'Tech/AI', text:'"TSMC manufactures over 90% of the world\'s most advanced semiconductors — chips at 7nm or below."', verdict:'true', episode:'Acquired S14E61', date:'Dec 3, 2025', trending:true,
+    context:'Ben discussed TSMC\'s dominance in semiconductor manufacturing.',
+    evidence:[
+      {source:'TrendForce / Counterpoint Research', text:'TSMC holds approximately 90-92% market share in advanced semiconductor manufacturing (sub-7nm). Samsung holds most of the remainder. This is widely cited industry data.'}
+    ]},
+  { id:60, person:'david_r', show:'Acquired', category:'History', text:'"The original iPhone development was so secret that most Apple employees didn\'t know it existed — the team worked in a locked-down building called the Purple Dorm."', verdict:'true', episode:'Acquired S14E62', date:'Dec 17, 2025',
+    context:'David covered Apple\'s iPhone development story.',
+    evidence:[
+      {source:'Fred Vogelstein, "Dogfight" / Various Apple histories', text:'The iPhone project (codenamed "Purple") was developed in a locked-down section of Infinite Loop with badge-access restrictions. Employees signed additional NDAs. The "Purple Dorm" nickname is well-documented.'}
+    ]},
+  { id:61, person:'satya', show:'Acquired', category:'Tech/AI', text:'"Microsoft\'s cloud revenue now exceeds $100 billion annually, surpassing our Windows business for the first time in 2023."', verdict:'true', episode:'Acquired S14E63', date:'Jan 7, 2026',
+    context:'Satya Nadella appeared as a guest on Acquired.',
+    evidence:[
+      {source:'Microsoft 10-K / Earnings', text:'Microsoft\'s Intelligent Cloud segment (including Azure) generated $96B in FY2024 (ending June 2024), with Azure growing 29% YoY. By FY2025, cloud revenue comfortably exceeded $100B annually. It surpassed the More Personal Computing segment (which includes Windows) in FY2023.'}
+    ]},
+  { id:62, person:'ben', show:'Acquired', category:'Finance/Economics', text:'"Berkshire Hathaway\'s cash pile exceeded $320 billion by end of 2025 — Buffett is sitting on more cash than ever before."', verdict:'true', episode:'Acquired S14E64', date:'Jan 21, 2026',
+    context:'Ben discussed Berkshire Hathaway\'s recent investment strategy.',
+    evidence:[
+      {source:'Berkshire Hathaway Q3 2025 Report', text:'Berkshire\'s cash and Treasury bill holdings reached approximately $325B by Q3 2025, a record high, as Buffett was a net seller of equities throughout the year.'}
+    ]},
+  { id:63, person:'david_r', show:'Acquired', category:'History', text:'"Google was almost called \'BackRub\' — that was the original name of the search engine Larry Page and Sergey Brin built at Stanford."', verdict:'true', episode:'Acquired S14E65', date:'Feb 4, 2026',
+    context:'David covered Google\'s founding story.',
+    evidence:[
+      {source:'Google Corporate History / Stanford archives', text:'The search engine was indeed originally named "BackRub" (1996) because it analyzed back links. It was renamed Google (a play on "googol") in 1997.'}
+    ]},
+  { id:64, person:'jensen', show:'Acquired', category:'Tech/AI', text:'"NVIDIA\'s data center revenue grew from $3 billion to over $50 billion in just three years — the fastest revenue ramp in semiconductor history."', verdict:'true', episode:'Acquired S14E57', date:'Oct 8, 2025',
+    context:'Jensen Huang appeared to discuss NVIDIA\'s AI-driven growth.',
+    evidence:[
+      {source:'NVIDIA Earnings Reports', text:'NVIDIA Data Center revenue: FY2022 ~$10.6B, FY2023 ~$15B, FY2024 ~$47.5B, FY2025 (projected) ~$90B+. The growth from $3B (FY2021) to $50B+ is accurate. Whether it\'s the absolute fastest ramp depends on inflation-adjustment, but in nominal terms it\'s unprecedented.'}
+    ]},
+  { id:65, person:'ben', show:'Acquired', category:'History', text:'"Disney paid $4 billion for Lucasfilm in 2012 and has already earned over $12 billion in box office revenue from Star Wars films alone."', verdict:'mostly-true', episode:'Acquired S14E66', date:'Feb 6, 2026',
+    context:'Ben discussed major media acquisitions.',
+    evidence:[
+      {source:'Box Office Mojo / Disney', text:'The five Disney Star Wars films (Episodes 7-9, Rogue One, Solo) grossed approximately $8.6B worldwide at the box office. Adding theme park revenue, merchandise, and Disney+ content brings total returns well above $12B, though "box office revenue alone" at $8.6B falls short of the $12B claim.'},
+      {source:'Note', text:'If including all Star Wars franchise revenue (merchandise, parks, streaming), $12B+ is easily exceeded. But "box office revenue alone" is approximately $8.6B.'}
+    ]},
+  { id:66, person:'david_r', show:'Acquired', category:'Tech/AI', text:'"The iPhone generates more revenue per year than most Fortune 500 companies generate in total — iPhone revenue alone would be a top-20 Fortune 500 company."', verdict:'true', episode:'Acquired S14E62', date:'Dec 17, 2025',
+    context:'David quantified the iPhone\'s economic impact.',
+    evidence:[
+      {source:'Apple 10-K / Fortune 500', text:'iPhone revenue in FY2024 was approximately $200B. This would rank around #15 on the Fortune 500 as a standalone company, ahead of companies like Alphabet, Costco, and JPMorgan Chase.'}
+    ]},
+
+  // ===== FREAKONOMICS RADIO — E580-E590 =====
+  { id:67, person:'dubner', show:'Freakonomics Radio', category:'Finance/Economics', text:'"Americans now collectively hold over $1.1 trillion in credit card debt — an all-time record."', verdict:'true', episode:'Freakonomics #580', date:'Oct 9, 2025',
+    context:'Dubner explored the state of American consumer finances.',
+    evidence:[
+      {source:'Federal Reserve Bank of New York', text:'Total credit card balances reached $1.14 trillion in Q3 2025, surpassing the previous record. This is part of a broader trend of rising consumer debt since 2021.'}
+    ]},
+  { id:68, person:'dubner', show:'Freakonomics Radio', category:'Finance/Economics', text:'"The average American household spends more on healthcare than on food — roughly $12,500 per year on medical costs."', verdict:'true', episode:'Freakonomics #581', date:'Oct 16, 2025',
+    context:'Dubner discussed healthcare economics.',
+    evidence:[
+      {source:'BLS Consumer Expenditure Survey', text:'Average household healthcare spending was approximately $6,300 out-of-pocket in 2024, but total healthcare cost (including employer-paid insurance) exceeds $12,000 per household. Food spending averaged ~$9,300. The claim depends on whether you count total cost or out-of-pocket only.'},
+      {source:'CMS National Health Expenditure Data', text:'Per-capita health spending in 2025 exceeded $14,500, translating to roughly $12,500+ per household when accounting for household size adjustments.'}
+    ]},
+  { id:69, person:'dubner', show:'Freakonomics Radio', category:'Finance/Economics', text:'"Tipping in restaurants started as a way to ensure good service — the word TIPS supposedly stands for \'To Insure Prompt Service.\'"', verdict:'false', episode:'Freakonomics #582', date:'Oct 23, 2025',
+    context:'Dubner explored the economics and history of tipping.',
+    evidence:[
+      {source:'Kerry Segrave, "Tipping" (1998) / Etymology research', text:'The TIPS acronym is a folk etymology with no historical basis. Tipping in Europe predates this supposed acronym by centuries. The practice originated in 17th-century English coffeehouses as a gratuity for servants. Dubner presented this as a common myth and then debunked it — but the quote was his setup, not his conclusion.'}
+    ]},
+  { id:70, person:'steve_levitt', show:'Freakonomics Radio', category:'Finance/Economics', text:'"The Uber surge pricing model has actually reduced wait times by 60% compared to traditional taxi dispatch systems."', verdict:'mostly-true', episode:'Freakonomics #583', date:'Nov 6, 2025',
+    context:'Steven Levitt appeared to discuss pricing economics.',
+    evidence:[
+      {source:'Cohen et al., 2016 / Hall et al., 2015', text:'Studies show Uber\'s dynamic pricing significantly reduced wait times — typical estimates range from 40-70% reduction compared to fixed-rate taxi dispatch. The 60% figure is within range but varies by city.'}
+    ]},
+  { id:71, person:'dubner', show:'Freakonomics Radio', category:'Finance/Economics', text:'"Americans waste about 30-40% of the food supply — roughly 130 billion pounds and $400 billion worth of food per year."', verdict:'true', episode:'Freakonomics #584', date:'Nov 13, 2025',
+    context:'Dubner explored food waste economics.',
+    evidence:[
+      {source:'USDA / ReFED', text:'USDA estimates 30-40% of the US food supply is wasted. ReFED\'s estimates put this at approximately 80 million tons (160 billion pounds) worth over $400 billion annually. Dubner\'s figures are accurate.'}
+    ]},
+  { id:72, person:'dubner', show:'Freakonomics Radio', category:'Finance/Economics', text:'"The college wage premium — how much more college graduates earn compared to high school graduates — has been roughly 80% for the past two decades."', verdict:'true', episode:'Freakonomics #585', date:'Nov 20, 2025',
+    context:'Dubner discussed the economics of higher education.',
+    evidence:[
+      {source:'Federal Reserve Bank of NY / BLS', text:'The college wage premium has hovered around 75-85% since the early 2000s. College graduates earn approximately 80% more than those with only a high school diploma over their careers.'}
+    ]},
+  { id:73, person:'steve_levitt', show:'Freakonomics Radio', category:'Finance/Economics', text:'"Legalizing sports betting in the US has generated over $3 billion in state tax revenue since the Supreme Court ruling."', verdict:'true', episode:'Freakonomics #586', date:'Dec 4, 2025',
+    context:'Levitt discussed the economics of gambling.',
+    evidence:[
+      {source:'American Gaming Association', text:'Since Murphy v. NCAA (2018), legal sports betting has expanded to 38+ states, generating cumulative state tax revenues exceeding $4B by end of 2025. Levitt\'s $3B figure is conservative.'}
+    ]},
+  { id:74, person:'dubner', show:'Freakonomics Radio', category:'Science/Health', text:'"Only about 6% of biomedical research findings are ever successfully replicated in independent studies."', verdict:'mixed', episode:'Freakonomics #587', date:'Dec 11, 2025',
+    context:'Dubner explored the replication crisis in science.',
+    evidence:[
+      {source:'Begley & Ellis, 2012 (Nature)', text:'The famous Amgen study found only 6 of 53 "landmark" cancer biology studies could be replicated (11%). However, broader replication rates across all biomedical research are higher (40-60%). The 6% figure comes from one specific study of high-impact cancer findings.'},
+      {source:'Open Science Collaboration, 2015', text:'The Reproducibility Project in psychology found ~36% of studies replicated. Biomedical rates vary widely by field and methodology.'}
+    ]},
+  { id:75, person:'dubner', show:'Freakonomics Radio', category:'Finance/Economics', text:'"The average American moves 11.7 times in their lifetime — we\'re one of the most geographically mobile nations on Earth."', verdict:'mostly-true', episode:'Freakonomics #588', date:'Jan 8, 2026',
+    context:'Dubner discussed geographic mobility and its economic effects.',
+    evidence:[
+      {source:'Census Bureau', text:'The Census Bureau estimate of 11.7 lifetime moves dates from older data. Recent trends show declining mobility — the annual moving rate has fallen from ~20% in the 1960s to about 8.4% in 2023. The 11.7 figure may be historical; current cohorts will likely move fewer times.'}
+    ]},
+  { id:76, person:'dubner', show:'Freakonomics Radio', category:'Finance/Economics', text:'"The US spends roughly twice as much per capita on healthcare as other developed nations but has worse outcomes on most measures including life expectancy."', verdict:'true', episode:'Freakonomics #589', date:'Jan 22, 2026', trending:true,
+    context:'Dubner examined US healthcare system efficiency.',
+    evidence:[
+      {source:'OECD Health Data / Commonwealth Fund', text:'US per-capita health spending (~$12,500 in 2023) is roughly double the OECD average (~$5,800). US life expectancy (77.5 years) ranks last among comparable high-income nations. Multiple quality metrics also trail peers.'}
+    ],
+    transcript:[
+      {speaker:'Dubner', time:'12:15', text:'Let me give you the headline number that should make every American uncomfortable.'},
+      {speaker:'Dubner', time:'12:20', text:'The US spends roughly twice as much per capita on healthcare as other developed nations but has worse outcomes on most measures including life expectancy.', highlight:true},
+      {speaker:'Dubner', time:'12:30', text:'We\'re spending $12,500 per person per year. The OECD average is about $5,800.'},
+      {speaker:'Dubner', time:'12:38', text:'And yet our life expectancy is dead last among comparable nations. Our infant mortality rate is higher. Our chronic disease burden is higher.'},
+      {speaker:'Dubner', time:'12:48', text:'So the question that economists should be obsessed with is: where is all that money going, and why isn\'t it buying us better health?'},
+      {speaker:'Dubner', time:'12:56', text:'The answer, as with most things in economics, is that it\'s complicated. But administrative costs alone eat up about 30% of total spending.'},
+    ]},
+  { id:77, person:'dubner', show:'Freakonomics Radio', category:'Finance/Economics', text:'"Remote work has resulted in a permanent reduction of about 28% in full days worked from the office compared to pre-pandemic levels."', verdict:'true', episode:'Freakonomics #590', date:'Feb 5, 2026',
+    context:'Dubner explored the lasting economic impact of remote work.',
+    evidence:[
+      {source:'Barrero, Bloom, & Davis (WFH Research)', text:'The Survey of Working Arrangements and Attitudes consistently shows full days worked from home stabilized at about 28% of total working days, down from 5% pre-pandemic but well below the 60% peak during lockdowns.'}
+    ]},
+
+  // ===== FOUND MY FITNESS — E215-E225 =====
+  { id:78, person:'rhonda', show:'Found My Fitness', category:'Nutrition', text:'"Sulforaphane from broccoli sprouts activates the Nrf2 pathway, which controls over 200 genes involved in antioxidant defense and detoxification."', verdict:'true', episode:'Found My Fitness #215', date:'Oct 10, 2025',
+    context:'Rhonda Patrick discussed her signature topic of sulforaphane and cruciferous vegetables.',
+    evidence:[
+      {source:'Houghton et al., 2016 / Dinkova-Kostova & Abramov, 2015', text:'Sulforaphane is one of the most potent natural activators of Nrf2. The Nrf2 pathway regulates over 200 cytoprotective genes. This is well-established in the literature.'}
+    ]},
+  { id:79, person:'rhonda', show:'Found My Fitness', category:'Nutrition', text:'"Vitamin D deficiency affects approximately 42% of US adults, making it one of the most common nutritional deficiencies in the developed world."', verdict:'true', episode:'Found My Fitness #216', date:'Oct 17, 2025',
+    context:'Rhonda discussed vitamin D\'s role in immune function.',
+    evidence:[
+      {source:'Forrest & Stuhldreher, 2011 (Nutrition Research)', text:'NHANES data analysis found 41.6% of US adults were deficient in vitamin D (<20 ng/mL). Rates were higher in Black adults (82%) and Hispanic adults (69%).'}
+    ]},
+  { id:80, person:'rhonda', show:'Found My Fitness', category:'Science/Health', text:'"Sauna use activates heat shock proteins, which help repair misfolded proteins and may reduce the risk of neurodegenerative diseases like Alzheimer\'s."', verdict:'mostly-true', episode:'Found My Fitness #217', date:'Oct 24, 2025',
+    context:'Rhonda discussed the molecular mechanisms of heat stress.',
+    evidence:[
+      {source:'Laukkanen et al., 2017 / Leak, 2014', text:'Heat stress does activate heat shock proteins (particularly HSP70 and HSP90). The Finnish sauna studies showed reduced dementia risk with frequent sauna use. However, the direct causal link between HSP activation and Alzheimer\'s prevention in humans remains correlational.'}
+    ]},
+  { id:81, person:'rhonda', show:'Found My Fitness', category:'Nutrition', text:'"Omega-3 fatty acid deficiency is estimated to be the 6th leading preventable cause of death in the United States."', verdict:'mostly-true', episode:'Found My Fitness #218', date:'Nov 7, 2025',
+    context:'Rhonda made the case for omega-3 supplementation.',
+    evidence:[
+      {source:'Danaei et al., 2009 (PLoS Medicine)', text:'This study estimated that low dietary omega-3 fatty acids contributed to approximately 84,000 preventable deaths annually, ranking it among the top dietary risk factors. The exact ranking (6th) comes from this specific paper.'}
+    ]},
+  { id:82, person:'dom', show:'Found My Fitness', category:'Nutrition', text:'"Ketogenic diets have been shown to reduce seizure frequency by more than 50% in about two-thirds of children with drug-resistant epilepsy."', verdict:'true', episode:'Found My Fitness #219', date:'Nov 14, 2025',
+    context:'Dom D\'Agostino appeared as a guest to discuss ketogenic metabolism.',
+    evidence:[
+      {source:'Neal et al., 2008 (Lancet Neurology)', text:'RCT showed 38% of children on ketogenic diet achieved >50% seizure reduction vs 6% in controls. Broader studies including observational data show approximately 50-60% of children achieve >50% reduction. Dom\'s "two-thirds" is slightly optimistic but within range of some studies.'}
+    ]},
+  { id:83, person:'rhonda', show:'Found My Fitness', category:'Nutrition', text:'"Magnesium deficiency affects up to 50% of the US population, largely because modern soil depletion has reduced magnesium content in food."', verdict:'mixed', episode:'Found My Fitness #220', date:'Nov 21, 2025',
+    context:'Rhonda discussed magnesium\'s role in over 300 enzymatic reactions.',
+    evidence:[
+      {source:'Rosanoff et al., 2012', text:'Approximately 48% of Americans consume less than the RDA for magnesium. However, subclinical deficiency rates are debated, and the "soil depletion" narrative is an oversimplification. Crop mineral content has declined somewhat, but processed food consumption and dietary choices are larger factors.'}
+    ]},
+  { id:84, person:'rhonda', show:'Found My Fitness', category:'Science/Health', text:'"Telomere length is correlated with biological aging, and chronic psychological stress can accelerate telomere shortening by the equivalent of 10 years of aging."', verdict:'mostly-true', episode:'Found My Fitness #221', date:'Dec 5, 2025',
+    context:'Rhonda discussed cellular aging markers.',
+    evidence:[
+      {source:'Epel et al., 2004 (PNAS)', text:'Landmark study found chronically stressed caregivers had telomeres equivalent to 9-17 years of additional aging. The "10 years" figure is a commonly cited midpoint from this study. However, telomere length as a biomarker of aging has limitations and the field has become more nuanced since 2004.'}
+    ]},
+  { id:85, person:'dom', show:'Found My Fitness', category:'Nutrition', text:'"Exogenous ketone supplements can elevate blood ketone levels to 1-3 mmol/L within 30 minutes, mimicking a fasted state without actual fasting."', verdict:'true', episode:'Found My Fitness #222', date:'Dec 12, 2025',
+    context:'Dom discussed the practical application of ketone supplements.',
+    evidence:[
+      {source:'Stubbs et al., 2017 / Cox et al., 2016', text:'Multiple studies confirm that ketone ester supplements (particularly R-1,3-butanediol acetoacetate diester) can raise blood BHB to 1-3+ mmol/L within 20-30 minutes. This mimics nutritional ketosis levels.'}
+    ]},
+  { id:86, person:'rhonda', show:'Found My Fitness', category:'Science/Health', text:'"Exercise triggers the release of BDNF (brain-derived neurotrophic factor), which promotes neurogenesis — the growth of new brain cells — primarily in the hippocampus."', verdict:'true', episode:'Found My Fitness #223', date:'Jan 9, 2026',
+    context:'Rhonda discussed exercise and brain health.',
+    evidence:[
+      {source:'Cotman & Berchtold, 2002 / Erickson et al., 2011', text:'Exercise-induced BDNF release and hippocampal neurogenesis is one of the most well-replicated findings in neuroscience. The Erickson study showed 1 year of aerobic exercise increased hippocampal volume by 2%.'}
+    ]},
+  { id:87, person:'rhonda', show:'Found My Fitness', category:'Nutrition', text:'"Blueberries contain the highest concentration of anthocyanins among common fruits, and regular consumption has been linked to a 2-3 year delay in cognitive aging."', verdict:'mostly-true', episode:'Found My Fitness #224', date:'Jan 23, 2026',
+    context:'Rhonda discussed polyphenol-rich foods and brain health.',
+    evidence:[
+      {source:'Devore et al., 2012 (Annals of Neurology)', text:'Nurses\' Health Study found women who consumed 2+ servings of blueberries per week had cognitive aging delayed by up to 2.5 years. Blueberries are among the highest anthocyanin sources but some berries (e.g., black elderberry) have higher concentrations per gram.'}
+    ]},
+  { id:88, person:'rhonda', show:'Found My Fitness', category:'Nutrition', text:'"Curcumin from turmeric has poor bioavailability — less than 1% is absorbed — unless combined with piperine from black pepper, which increases absorption by 2,000%."', verdict:'true', episode:'Found My Fitness #225', date:'Feb 6, 2026',
+    context:'Rhonda discussed supplement bioavailability.',
+    evidence:[
+      {source:'Shoba et al., 1998', text:'The landmark study showed piperine (20mg) increased curcumin bioavailability by 2,000% in humans. Curcumin\'s baseline absorption is indeed very low (<1%). This finding has been replicated and is the basis for many curcumin supplement formulations.'}
+    ]},
+
+  // ===== CROSS-SHOW GUEST APPEARANCES =====
+  { id:89, person:'huberman', show:"Peter Attia's The Drive", category:'Science/Health', text:'"Deliberate heat exposure through sauna use increases growth hormone by 200-300% when done for 20 minutes at 176°F or higher."', verdict:'mostly-true', episode:'The Drive #287', date:'Oct 20, 2025',
+    context:'Huberman appeared as a guest on Attia\'s show to discuss hormetic stressors.',
+    evidence:[
+      {source:'Leppäluoto et al., 1986', text:'Finnish sauna studies showed growth hormone increases of 200-300% after 20+ minutes at 80°C+ (176°F). However, these are acute spikes that return to baseline within hours, and the physiological significance of transient GH spikes is debated.'}
+    ]},
+  { id:90, person:'rhonda', show:'Huberman Lab', category:'Nutrition', text:'"Sulforaphane from broccoli sprouts has been shown to reduce markers of inflammation by 20-30% in clinical trials lasting 8-12 weeks."', verdict:'mostly-true', episode:'Huberman Lab #318', date:'Feb 7, 2026',
+    context:'Rhonda Patrick appeared as a guest on Huberman Lab.',
+    evidence:[
+      {source:'Fahey et al., 2017 / Chen et al., 2019', text:'Multiple trials show sulforaphane reduces inflammatory biomarkers (CRP, IL-6) by varying degrees. The 20-30% reduction in CRP is consistent with several studies, though results vary by population and dose.'}
+    ]},
+  { id:91, person:'attia', show:'Huberman Lab', category:'Science/Health', text:'"The most important blood biomarker most doctors don\'t test is ApoB — it should be standard on every adult\'s annual blood panel."', verdict:'mostly-true', episode:'Huberman Lab #319', date:'Feb 7, 2026',
+    context:'Attia appeared as a guest on Huberman Lab to discuss preventive medicine.',
+    evidence:[
+      {source:'European Atherosclerosis Society / ACC', text:'EAS recommends ApoB as a primary lipid target. However, most US guidelines (ACC/AHA) still use LDL-C as the primary metric. Attia\'s claim that it "should be standard" reflects growing expert consensus but isn\'t yet mainstream guideline practice.'}
+    ]},
+  { id:92, person:'chamath', show:'Lex Fridman Podcast', category:'Finance/Economics', text:'"The venture capital industry has returned less than the S&P 500 on average over the past 10 years when you account for fees and illiquidity."', verdict:'mixed', episode:'Lex Fridman #442', date:'Feb 7, 2026',
+    context:'Chamath appeared as a guest on Lex Fridman to discuss the future of venture capital.',
+    evidence:[
+      {source:'Cambridge Associates / PitchBook', text:'VC as an asset class has outperformed public markets over 10-year periods through 2023 (median VC fund returned ~14% net IRR vs S&P ~12%). However, bottom-quartile VC funds significantly underperform public markets. Chamath\'s claim applies to median/average funds but not top-quartile performers.'},
+      {source:'Note', text:'After accounting for illiquidity premium, the average VC fund\'s risk-adjusted return is debatable. Chamath may be citing different data vintages or fee structures.'}
+    ],
+    transcript:[
+      {speaker:'Lex', time:'28:15', text:'You\'ve been in venture capital for over a decade. What\'s your honest assessment of the industry?'},
+      {speaker:'Chamath', time:'28:22', text:'Look, I\'ll be honest about something most VCs won\'t admit publicly.'},
+      {speaker:'Chamath', time:'28:28', text:'The venture capital industry has returned less than the S&P 500 on average over the past 10 years when you account for fees and illiquidity.', highlight:true},
+      {speaker:'Lex', time:'28:36', text:'Really? That seems like a damning indictment of the entire industry.'},
+      {speaker:'Chamath', time:'28:42', text:'Well, the top quartile still does really well. The best funds — Benchmark, a16z, Founders Fund — they crush the market. But the median VC fund? You\'d have been better off in an index fund.'},
+      {speaker:'Lex', time:'28:52', text:'So it\'s essentially a power law within a power law.'},
+      {speaker:'Chamath', time:'28:56', text:'Exactly. The companies follow a power law, and so do the funds. Most LPs would be better off in public equities.'},
+    ]},
+  { id:93, person:'attia', show:'Lex Fridman Podcast', category:'Science/Health', text:'"If you\'re a 40-year-old male in the bottom 25th percentile of VO2 max, your risk of all-cause mortality is roughly 5x higher than someone in the top 2.5%."', verdict:'true', episode:'Lex Fridman #436', date:'Jan 20, 2026',
+    context:'Attia appeared as a guest on Lex Fridman to discuss his "Outlive" framework.',
+    evidence:[
+      {source:'Mandsager et al., 2018 (JAMA Network Open)', text:'The study found that elite fitness (top 2.3%) was associated with an 80% lower risk of all-cause mortality compared to low fitness (bottom 25%). Depending on the age cohort, this translates to approximately a 4-5x difference in mortality risk.'}
+    ]},
+  { id:94, person:'layne', show:"Peter Attia's The Drive", category:'Nutrition', text:'"The thermic effect of protein is 20-30% of calories consumed — meaning if you eat 100 calories of protein, your body burns 20-30 just digesting it."', verdict:'true', episode:'The Drive #296', date:'Jan 13, 2026',
+    context:'Layne Norton appeared as a guest on The Drive to discuss protein metabolism.',
+    evidence:[
+      {source:'Westerterp, 2004 / Halton & Hu, 2004', text:'The thermic effect of food (TEF) for protein is well-established at 20-30% of energy content, compared to 5-10% for carbohydrates and 0-3% for fats. This is one of the most robust findings in nutrition science.'}
+    ]},
+  { id:95, person:'balaji', show:'All-In Podcast', category:'Tech/AI', text:'"India\'s UPI payment system now processes over 10 billion transactions per month — more than all US payment networks combined."', verdict:'mostly-true', episode:'All-In E219', date:'Feb 7, 2026',
+    context:'Balaji appeared as a guest on All-In to discuss India\'s digital economy.',
+    evidence:[
+      {source:'NPCI / Reserve Bank of India', text:'UPI processed approximately 12 billion transactions in December 2025. US card networks (Visa, Mastercard, AmEx) process roughly 10-12 billion combined transactions monthly. The comparison is close but Balaji\'s "more than combined" is at the margin of accuracy.'},
+      {source:'Note', text:'Transaction count comparisons are tricky — average UPI transaction value (~$15) is much lower than US card transactions (~$60). By volume (count), they\'re roughly comparable.'}
+    ]},
+
+  // ===== ADDITIONAL CLAIMS TO REACH ~350 =====
+  // More All-In
+  { id:96, person:'friedberg', show:'All-In Podcast', category:'Science/Health', text:'"Nuclear power has the lowest death rate per unit of energy produced of any major energy source — about 0.03 deaths per TWh."', verdict:'true', episode:'All-In E210', date:'Oct 3, 2025',
+    context:'Friedberg argued for nuclear energy expansion.',
+    evidence:[
+      {source:'Our World in Data / Markandya & Wilkinson, 2007', text:'Nuclear power causes approximately 0.03 deaths per TWh (including Chernobyl and Fukushima), compared to coal (24.6), oil (18.4), natural gas (2.8), and even wind (0.04) and solar (0.05).'}
+    ]},
+  { id:97, person:'jason', show:'All-In Podcast', category:'Finance/Economics', text:'"The average Silicon Valley engineer now makes over $400,000 in total compensation including stock."', verdict:'mostly-true', episode:'All-In E211', date:'Oct 17, 2025',
+    context:'Jason discussed tech compensation trends.',
+    evidence:[
+      {source:'levels.fyi / Glassdoor', text:'Senior/Staff engineers at FAANG companies average $350-500K+ in total comp. However, the average across all SV engineers (including startups and mid-size companies) is lower, around $250-350K. Jason\'s figure applies to large tech companies, not the full market.'}
+    ]},
+  { id:98, person:'chamath', show:'All-In Podcast', category:'Finance/Economics', text:'"The median American household has less than $5,000 in savings — half the country is essentially living paycheck to paycheck."', verdict:'mostly-true', episode:'All-In E212', date:'Oct 31, 2025',
+    context:'Chamath discussed wealth inequality.',
+    evidence:[
+      {source:'Federal Reserve Survey of Consumer Finances', text:'The median transaction account balance is approximately $8,000, but about 60% of Americans report living paycheck to paycheck (per PYMNTS/LendingClub survey). The "$5,000" figure is somewhat low for median savings but the broader point about financial fragility is well-supported.'}
+    ]},
+  { id:99, person:'sacks', show:'All-In Podcast', category:'Finance/Economics', text:'"California has lost over 350,000 residents to domestic migration every year since 2020 — it\'s the biggest exodus in state history."', verdict:'mostly-true', episode:'All-In E213', date:'Jan 10, 2026',
+    context:'Sacks discussed California\'s population trends.',
+    evidence:[
+      {source:'Census Bureau / CA Dept of Finance', text:'California experienced net domestic out-migration of roughly 340,000 in 2021, ~340,000 in 2022, declining to ~250,000 in 2023 and ~200,000 in 2024. The "350,000 every year since 2020" overstates the trend, which peaked in 2021-2022 and has moderated.'}
+    ]},
+  { id:100, person:'friedberg', show:'All-In Podcast', category:'Tech/AI', text:'"Autonomous vehicles are now 4x safer than human drivers per mile driven, according to Waymo\'s public safety data."', verdict:'mostly-true', episode:'All-In E219', date:'Feb 7, 2026',
+    context:'Friedberg discussed the progress of autonomous driving.',
+    evidence:[
+      {source:'Waymo Safety Reports / Swiss Re', text:'Waymo\'s published data shows their vehicles have 85% fewer injury-causing crashes per mile than human drivers in their operating domains. The "4x safer" framing depends on the metric used — by bodily injury claims, the multiplier may be 4-6x. However, AVs operate in relatively controlled environments (good weather, mapped cities).'}
+    ]},
+  // More Huberman
+  { id:101, person:'huberman', show:'Huberman Lab', category:'Science/Health', text:'"Resistance training at least twice per week has been shown to reduce the risk of all-cause mortality by about 15% independent of aerobic exercise."', verdict:'true', episode:'Huberman Lab #308', date:'Oct 7, 2025',
+    context:'Huberman discussed the health benefits of strength training.',
+    evidence:[
+      {source:'Momma et al., 2022 (British Journal of Sports Medicine)', text:'Systematic review and meta-analysis found 30-60 minutes of resistance training per week was associated with a 10-17% reduction in all-cause mortality, independent of aerobic activity. The 15% figure is a reasonable midpoint.'}
+    ]},
+  { id:102, person:'huberman', show:'Huberman Lab', category:'Science/Health', text:'"Psilocybin has been shown to grow new neural connections in a single dose — increasing dendritic spine density by about 10% within 24 hours."', verdict:'true', episode:'Huberman Lab #310', date:'Oct 21, 2025',
+    context:'Huberman discussed psychedelic-assisted therapy research.',
+    evidence:[
+      {source:'Shao et al., 2021 (Neuron)', text:'A single dose of psilocybin increased dendritic spine density by approximately 10% in mouse cortex within 24 hours, with effects lasting at least one month. This has been replicated in multiple preclinical studies.'}
+    ]},
+  { id:103, person:'huberman', show:'Huberman Lab', category:'Science/Health', text:'"The average adult blinks about 15-20 times per minute, and each blink resets attentional focus through a brief dopamine pulse."', verdict:'mixed', episode:'Huberman Lab #311', date:'Nov 4, 2025',
+    context:'Huberman discussed attention and focus mechanisms.',
+    evidence:[
+      {source:'Nakano et al., 2013 (PNAS)', text:'Average blink rate is 15-20/minute — that\'s accurate. Blinks do correlate with attentional shifts and activate the default mode network. However, the "dopamine pulse" claim is not well-supported — blinks involve attention network switching, not dopaminergic release specifically.'}
+    ]},
+  // More Lex
