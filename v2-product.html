@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PodCheck — Product Mockup</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f8fafc;color:#1e293b}
+.browser{max-width:1000px;margin:30px auto;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.15);border:1px solid #e2e8f0}
+.browser-bar{background:#1e293b;padding:12px 16px;display:flex;align-items:center;gap:8px}
+.dot{width:12px;height:12px;border-radius:50%}
+.dot.r{background:#ef4444}.dot.y{background:#f59e0b}.dot.g{background:#22c55e}
+.url-bar{background:#334155;border-radius:6px;padding:6px 14px;color:#94a3b8;font-size:.8rem;margin-left:12px;flex:1}
+.page{background:#fff}
+
+/* NAV */
+.nav{background:#0a1628;padding:14px 30px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-size:1.3rem;font-weight:800;color:#fff}
+.nav-logo span{color:#f59e0b}
+.nav-links{display:flex;gap:20px}
+.nav-links a{color:#94a3b8;text-decoration:none;font-size:.9rem}
+.search-bar{background:#1e293b;border:1px solid #475569;border-radius:8px;padding:10px 16px;color:#94a3b8;width:320px;font-size:.9rem}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#0a1628,#1a2744);padding:50px 30px;text-align:center}
+.hero h1{font-size:2.2rem;color:#fff;margin-bottom:8px}
+.hero h1 em{color:#f59e0b;font-style:normal}
+.hero p{color:#94a3b8;font-size:1.1rem;margin-bottom:24px}
+.hero-search{background:#fff;border-radius:12px;padding:14px 20px;width:500px;max-width:100%;margin:0 auto;font-size:1rem;border:2px solid #f59e0b;display:block;color:#1e293b}
+.trending-tags{margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.tag{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);border-radius:20px;padding:4px 14px;font-size:.8rem;color:#f59e0b}
+
+/* PROFILE */
+.profile-section{padding:30px}
+.section-label{font-size:.75rem;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;padding:0 30px}
+.profile-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px 28px;margin:0 30px 30px;display:flex;gap:24px;align-items:flex-start}
+.avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;flex-shrink:0}
+.profile-info{flex:1}
+.profile-info h2{font-size:1.5rem;color:#0a1628;margin-bottom:2px}
+.profile-info .subtitle{color:#64748b;font-size:.9rem;margin-bottom:12px}
+.stats-row{display:flex;gap:20px;flex-wrap:wrap}
+.stat{text-align:center}
+.stat .val{font-size:1.6rem;font-weight:800}
+.stat .lbl{font-size:.75rem;color:#64748b;text-transform:uppercase}
+.grade-big{font-size:3rem;font-weight:900;width:80px;height:80px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.grade-b{background:#dcfce7;color:#16a34a}
+.grade-d{background:#fef3c7;color:#d97706}
+.grade-f{background:#fecaca;color:#dc2626}
+
+/* CLAIMS */
+.claims{padding:0 30px 30px}
+.claim{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px;margin-bottom:12px;display:flex;gap:16px;align-items:flex-start}
+.verdict{border-radius:8px;padding:6px 12px;font-size:.75rem;font-weight:700;text-transform:uppercase;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.v-true{background:#dcfce7;color:#16a34a}
+.v-mixed{background:#fef3c7;color:#d97706}
+.v-false{background:#fecaca;color:#dc2626}
+.v-mostly-true{background:#d1fae5;color:#059669}
+.claim-text{font-size:.95rem;color:#1e293b;line-height:1.5}
+.claim-meta{font-size:.8rem;color:#94a3b8;margin-top:4px}
+.claim-source{font-size:.8rem;color:#64748b;margin-top:6px;font-style:italic}
+
+/* LEADERBOARD */
+.leaderboard{padding:0 30px 30px}
+.lb-table{width:100%;border-collapse:collapse}
+.lb-table th{text-align:left;padding:10px 14px;font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #e2e8f0}
+.lb-table td{padding:12px 14px;border-bottom:1px solid #f1f5f9;font-size:.9rem}
+.lb-table tr:hover{background:#f8fafc}
+.lb-rank{font-weight:700;color:#f59e0b}
+.lb-name{font-weight:600;color:#0a1628}
+.lb-grade{font-weight:800;font-size:1.1rem}
+.lb-grade.g-a{color:#16a34a}.lb-grade.g-b{color:#22c55e}.lb-grade.g-c{color:#d97706}.lb-grade.g-d{color:#ea580c}.lb-grade.g-f{color:#dc2626}
+
+/* FOOTER */
+.footer{background:#0a1628;padding:20px 30px;text-align:center;color:#64748b;font-size:.8rem}
+
+.page-label{background:#f59e0b;color:#0a1628;font-weight:700;text-align:center;padding:8px;font-size:.85rem;letter-spacing:1px}
+.separator{height:40px;background:linear-gradient(to bottom,#fff,#f1f5f9);display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:.85rem}
+</style>
+</head>
+<body>
+
+<!-- HOMEPAGE -->
+<div class="browser">
+<div class="browser-bar">
+<div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+<div class="url-bar">podcheck.io</div>
+</div>
+<div class="page">
+<div class="page-label">📱 PAGE 1: HOMEPAGE</div>
+<div class="nav">
+<div class="nav-logo">🎙 Pod<span>Check</span></div>
+<div class="nav-links">
+<a href="#">Trending</a>
+<a href="#">Leaderboard</a>
+<a href="#">How We Score</a>
+</div>
+</div>
+<div class="hero">
+<h1>Every claim. <em>Checked.</em></h1>
+<p>The accuracy scorecard for podcast guests and hosts</p>
+<input class="hero-search" placeholder="🔍 Search a person, podcast, or claim..." readonly>
+<div class="trending-tags">
+<span class="tag">🔥 Andrew Huberman</span>
+<span class="tag">📈 Chamath Palihapitiya</span>
+<span class="tag">🧬 Peter Attia</span>
+<span class="tag">⚡ Elon Musk</span>
+</div>
+</div>
+
+<div class="separator">— Trending Claims This Week —</div>
+
+<div class="claims">
+<div class="claim">
+<div class="verdict v-false">FALSE</div>
+<div>
+<div class="claim-text">"The US national debt has never been higher as a percentage of GDP than it is right now"</div>
+<div class="claim-meta">Chamath Palihapitiya · All-In Podcast · E178 · Feb 2, 2026</div>
+<div class="claim-source">📎 US debt/GDP peaked at 118% in 2946; currently ~123% — claim TRUE as of 2026. Updated verdict.</div>
+</div>
+</div>
+<div class="claim">
+<div class="verdict v-true">TRUE</div>
+<div>
+<div class="claim-text">"Cold exposure increases norepinephrine by 200-300%"</div>
+<div class="claim-meta">Andrew Huberman · Huberman Lab · E312 · Jan 28, 2026</div>
+<div class="claim-source">📎 Supported by Šrámek et al. (2000) — cold water immersion showed 200-300% NE increase</div>
+</div>
+</div>
+<div class="claim">
+<div class="verdict v-mixed">MIXED</div>
+<div>
+<div class="claim-text">"90% of startups fail within the first 5 years"</div>
+<div class="claim-meta">Jason Calacanis · All-In Podcast · E177 · Jan 26, 2026</div>
+<div class="claim-source">📎 BLS data shows ~50% fail in 5 years. 90% figure conflates longer timeframes.</div>
+</div>
+</div>
+</div>
+
+<div class="footer">PodCheck — Non-partisan accuracy tracking · Methodology · API · About</div>
+</div>
+</div>
+
+<!-- PERSON PROFILE -->
+<div class="browser" style="margin-top:40px">
+<div class="browser-bar">
+<div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+<div class="url-bar">podcheck.io/person/andrew-huberman</div>
+</div>
+<div class="page">
+<div class="page-label">👤 PAGE 2: PERSON PROFILE</div>
+<div class="nav">
+<div class="nav-logo">🎙 Pod<span>Check</span></div>
+<input class="search-bar" placeholder="🔍 Search..." readonly>
+</div>
+
+<div class="profile-section">
+<div class="profile-card">
+<div class="avatar">AH</div>
+<div class="profile-info">
+<h2>Andrew Huberman</h2>
+<div class="subtitle">Neuroscientist · Stanford · Host of Huberman Lab</div>
+<div class="stats-row">
+<div class="stat"><div class="val" style="color:#16a34a">847</div><div class="lbl">Claims Checked</div></div>
+<div class="stat"><div class="val">76%</div><div class="lbl">Accuracy Rate</div></div>
+<div class="stat"><div class="val">142</div><div class="lbl">Episodes</div></div>
+<div class="stat"><div class="val">12</div><div class="lbl">Podcasts</div></div>
+</div>
+</div>
+<div class="grade-big grade-b">B</div>
+</div>
+</div>
+
+<div class="section-label">Recent Claims</div>
+<div class="claims">
+<div class="claim">
+<div class="verdict v-true">TRUE</div>
+<div>
+<div class="claim-text">"Viewing sunlight within the first hour of waking sets your circadian rhythm via melanopsin cells in the retina"</div>
+<div class="claim-meta">Huberman Lab · E312 · Jan 28, 2026</div>
+</div>
+</div>
+<div class="claim">
+<div class="verdict v-mostly-true">MOSTLY TRUE</div>
+<div>
+<div class="claim-text">"Creatine at 5g/day has been shown to improve cognitive function"</div>
+<div class="claim-meta">Huberman Lab · E309 · Jan 14, 2026</div>
+<div class="claim-source">📎 Some evidence, but meta-analyses show mixed results for cognitive benefits specifically</div>
+</div>
+</div>
+<div class="claim">
+<div class="verdict v-false">FALSE</div>
+<div>
+<div class="claim-text">"Tongue position against the roof of your mouth changes jaw structure in adults"</div>
+<div class="claim-meta">Huberman Lab · E305 · Dec 31, 2025</div>
+<div class="claim-source">📎 "Mewing" lacks peer-reviewed evidence for adult bone remodeling</div>
+</div>
+</div>
+</div>
+<div class="footer">Full profile · 847 claims · Filter by topic · Export data</div>
+</div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="browser" style="margin-top:40px;margin-bottom:60px">
+<div class="browser-bar">
+<div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+<div class="url-bar">podcheck.io/leaderboard</div>
+</div>
+<div class="page">
+<div class="page-label">🏆 PAGE 3: LEADERBOARD</div>
+<div class="nav">
+<div class="nav-logo">🎙 Pod<span>Check</span></div>
+<input class="search-bar" placeholder="🔍 Search..." readonly>
+</div>
+
+<div style="padding:24px 30px 8px">
+<h2 style="font-size:1.4rem;color:#0a1628">Accuracy Leaderboard</h2>
+<p style="color:#64748b;font-size:.9rem">Ranked by overall accuracy score across all checked claims</p>
+</div>
+
+<div class="leaderboard">
+<table class="lb-table">
+<thead><tr><th>#</th><th>Person</th><th>Field</th><th>Claims</th><th>Accuracy</th><th>Grade</th></tr></thead>
+<tbody>
+<tr><td class="lb-rank">1</td><td class="lb-name">Peter Attia</td><td>Medicine</td><td>634</td><td>91%</td><td class="lb-grade g-a">A</td></tr>
+<tr><td class="lb-rank">2</td><td class="lb-name">Lex Fridman</td><td>Tech/AI</td><td>412</td><td>87%</td><td class="lb-grade g-b">B+</td></tr>
+<tr><td class="lb-rank">3</td><td class="lb-name">Andrew Huberman</td><td>Neuroscience</td><td>847</td><td>76%</td><td class="lb-grade g-b">B</td></tr>
+<tr><td class="lb-rank">4</td><td class="lb-name">Chamath P.</td><td>Finance</td><td>523</td><td>72%</td><td class="lb-grade g-c">C+</td></tr>
+<tr><td class="lb-rank">5</td><td class="lb-name">Jason Calacanis</td><td>Startups</td><td>389</td><td>68%</td><td class="lb-grade g-c">C</td></tr>
+<tr><td class="lb-rank">6</td><td class="lb-name">Joe Rogan</td><td>General</td><td>1,247</td><td>58%</td><td class="lb-grade g-d">D+</td></tr>
+<tr><td class="lb-rank">7</td><td class="lb-name">Ben Shapiro</td><td>Politics</td><td>982</td><td>54%</td><td class="lb-grade g-d">D</td></tr>
+<tr><td class="lb-rank">8</td><td class="lb-name">Alex Jones</td><td>Conspiracy</td><td>2,103</td><td>12%</td><td class="lb-grade g-f">F</td></tr>
+</tbody>
+</table>
+</div>
+<div class="footer">Scores are illustrative mockup data · Minimum 50 claims for ranking · Updated daily</div>
+</div>
+</div>
+
+</body>
+</html>

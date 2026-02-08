@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PodCheck — System Architecture</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0e27;color:#e0e0e0;min-height:100vh;overflow-x:hidden}
+.header{text-align:center;padding:40px 20px 20px}
+.header h1{font-size:2.4rem;color:#fff;letter-spacing:-1px}
+.header h1 span{color:#f59e0b}
+.header p{color:#94a3b8;margin-top:8px;font-size:1.1rem}
+.pipeline{max-width:900px;margin:30px auto;padding:0 20px}
+.stage{background:linear-gradient(135deg,#1e293b,#1a1f3a);border:1px solid #334155;border-radius:16px;padding:28px;margin-bottom:20px;position:relative;transition:transform .2s,box-shadow .2s}
+.stage:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(245,158,11,.15)}
+.stage-num{position:absolute;top:-14px;left:24px;background:#f59e0b;color:#0a0e27;font-weight:800;font-size:.85rem;padding:4px 14px;border-radius:20px}
+.stage h2{font-size:1.3rem;color:#fff;margin-bottom:10px}
+.stage-content{display:flex;gap:16px;flex-wrap:wrap}
+.node{background:#0f172a;border:1px solid #475569;border-radius:10px;padding:14px 18px;flex:1;min-width:180px}
+.node h3{font-size:.85rem;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.node p{font-size:.9rem;color:#cbd5e1;line-height:1.4}
+.node .tech{font-size:.75rem;color:#64748b;margin-top:6px}
+.arrow{text-align:center;font-size:1.8rem;color:#f59e0b;margin:4px 0;opacity:.6}
+.costs{max-width:900px;margin:20px auto 40px;padding:0 20px}
+.costs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.cost-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;text-align:center}
+.cost-card .amount{font-size:1.8rem;color:#f59e0b;font-weight:700}
+.cost-card .label{color:#94a3b8;font-size:.85rem;margin-top:4px}
+.section-title{text-align:center;font-size:1.4rem;color:#fff;margin:40px 0 20px}
+.flow-line{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;max-width:900px;margin:20px auto;padding:0 20px}
+.flow-step{background:#1e293b;border:1px solid #475569;border-radius:8px;padding:10px 16px;font-size:.85rem;color:#cbd5e1;white-space:nowrap}
+.flow-arrow{color:#f59e0b;font-size:1.2rem}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>🎙 Pod<span>Check</span></h1>
+<p>System Architecture — How claims go from audio to scores</p>
+</div>
+
+<div class="pipeline">
+
+<div class="stage">
+<div class="stage-num">1 · INGEST</div>
+<h2>Podcast Discovery & Transcription</h2>
+<div class="stage-content">
+<div class="node">
+<h3>Discovery</h3>
+<p>Scan for new episodes from 15+ seed podcasts, expanding over time</p>
+<div class="tech">PodcastIndex API · RSS feeds · YouTube</div>
+</div>
+<div class="node">
+<h3>Transcription</h3>
+<p>Convert audio to text with timestamps and speaker labels</p>
+<div class="tech">Whisper large-v3 · Deepgram fallback</div>
+</div>
+<div class="node">
+<h3>Speaker ID</h3>
+<p>Figure out WHO said WHAT using diarization + metadata</p>
+<div class="tech">pyannote.audio · episode metadata</div>
+</div>
+</div>
+</div>
+
+<div class="arrow">▼</div>
+
+<div class="stage">
+<div class="stage-num">2 · EXTRACT</div>
+<h2>AI Claim Extraction</h2>
+<div class="stage-content">
+<div class="node">
+<h3>Claim Detection</h3>
+<p>LLM identifies verifiable factual claims, filtering out opinions and banter</p>
+<div class="tech">Claude API · Custom prompts</div>
+</div>
+<div class="node">
+<h3>Classification</h3>
+<p>Categorize each claim: factual, statistical, causal, or prediction</p>
+<div class="tech">Science · Economics · Politics · Health</div>
+</div>
+<div class="node">
+<h3>Humor Filter</h3>
+<p>Detect sarcasm, jokes, and hypotheticals — don't fact-check comedy</p>
+<div class="tech">Context analysis · Speaker patterns</div>
+</div>
+</div>
+</div>
+
+<div class="arrow">▼</div>
+
+<div class="stage">
+<div class="stage-num">3 · VERIFY</div>
+<h2>Fact-Checking Pipeline</h2>
+<div class="stage-content">
+<div class="node">
+<h3>Source Matching</h3>
+<p>Find authoritative sources: gov databases, academic papers, established fact-checkers</p>
+<div class="tech">RAG pipeline · Web search · Curated DB</div>
+</div>
+<div class="node">
+<h3>Verdict</h3>
+<p>5-tier scoring per claim with confidence level and full evidence chain</p>
+<div class="tech">True · Mostly True · Mixed · Mostly False · False</div>
+</div>
+<div class="node">
+<h3>Human Review</h3>
+<p>Uncertain or high-profile claims queued for human fact-checkers</p>
+<div class="tech">Review queue · Dispute process</div>
+</div>
+</div>
+</div>
+
+<div class="arrow">▼</div>
+
+<div class="stage">
+<div class="stage-num">4 · SCORE</div>
+<h2>Profile & Aggregation</h2>
+<div class="stage-content">
+<div class="node">
+<h3>Person Score</h3>
+<p>Aggregate letter grade (A–F) based on all verified claims across appearances</p>
+<div class="tech">Weighted by recency · claim type · confidence</div>
+</div>
+<div class="node">
+<h3>Podcast Score</h3>
+<p>Overall accuracy grade for the show based on all guests + hosts</p>
+<div class="tech">Per-episode breakdowns</div>
+</div>
+<div class="node">
+<h3>Trending</h3>
+<p>Surface viral claims, biggest movers, most-disputed verdicts</p>
+<div class="tech">Real-time updates · Notifications</div>
+</div>
+</div>
+</div>
+
+<div class="arrow">▼</div>
+
+<div class="stage">
+<div class="stage-num">5 · SERVE</div>
+<h2>API + Frontend</h2>
+<div class="stage-content">
+<div class="node">
+<h3>Consumer Web</h3>
+<p>Search, browse profiles, compare guests, embed badges</p>
+<div class="tech">Next.js · SSR · CDN · PWA</div>
+</div>
+<div class="node">
+<h3>B2B API</h3>
+<p>Media companies, PR firms, booking platforms integrate scores</p>
+<div class="tech">REST · GraphQL · Webhooks</div>
+</div>
+<div class="node">
+<h3>Data Layer</h3>
+<p>PostgreSQL core, search index, caching, object storage</p>
+<div class="tech">Supabase · Elasticsearch · Redis · S3</div>
+</div>
+</div>
+</div>
+</div>
+
+<h3 class="section-title">Per-Episode Processing Flow</h3>
+<div class="flow-line">
+<div class="flow-step">🎧 Audio</div><span class="flow-arrow">→</span>
+<div class="flow-step">📝 Transcript</div><span class="flow-arrow">→</span>
+<div class="flow-step">🗣 Speakers</div><span class="flow-arrow">→</span>
+<div class="flow-step">🔍 Claims</div><span class="flow-arrow">→</span>
+<div class="flow-step">✅ Verdicts</div><span class="flow-arrow">→</span>
+<div class="flow-step">📊 Scores</div>
+</div>
+
+<h3 class="section-title">Phase 1 Cost Model</h3>
+<div class="costs">
+<div class="costs-grid">
+<div class="cost-card"><div class="amount">$0.80</div><div class="label">Per episode processed</div></div>
+<div class="cost-card"><div class="amount">~$300</div><div class="label">Monthly run rate</div></div>
+<div class="cost-card"><div class="amount">$5K</div><div class="label">6-month runway</div></div>
+<div class="cost-card"><div class="amount">15</div><div class="label">Seed podcasts</div></div>
+</div>
+</div>
+
+</body>
+</html>
