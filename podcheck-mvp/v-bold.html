@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PodCheck — Podcast Fact-Checking</title>
+<meta property="og:title" content="PodCheck — Every claim. Checked.">
+<meta property="og:description" content="AI-powered podcast fact-checking. Hold podcasters accountable.">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #0a0a0a;
+  --white: #ffffff;
+  --off-white: #fafafa;
+  --gray-50: #f5f5f5;
+  --gray-100: #e5e5e5;
+  --gray-200: #d4d4d4;
+  --gray-300: #a3a3a3;
+  --gray-400: #737373;
+  --gray-500: #525252;
+  --gray-600: #404040;
+  --gray-700: #262626;
+  --accent: #0066FF;
+  --accent-light: #3384ff;
+  --accent-bg: rgba(0,102,255,0.08);
+  --green: #16a34a;
+  --green-bg: #dcfce7;
+  --yellow: #ca8a04;
+  --yellow-bg: #fef9c3;
+  --orange: #ea580c;
+  --orange-bg: #ffedd5;
+  --red: #dc2626;
+  --red-bg: #fee2e2;
+  --serif: 'DM Serif Display', serif;
+  --sans: 'Inter', system-ui, sans-serif;
+  --radius: 8px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:var(--sans); background:var(--white); color:var(--black); min-height:100vh; -webkit-font-smoothing:antialiased; }
+a { color:var(--accent); text-decoration:none; cursor:pointer; }
+
+/* Nav */
+nav { background:var(--black); color:var(--white); padding:0 2rem; position:sticky; top:0; z-index:100; }
+.nav-inner { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:56px; }
+.logo { font-family:var(--serif); font-size:1.4rem; display:flex; align-items:center; gap:.5rem; cursor:pointer; color:var(--white); }
+.logo span { color:var(--accent); }
+.nav-links { display:flex; gap:2rem; }
+.nav-links a { color:var(--gray-300); font-size:.85rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; transition:color .2s; }
+.nav-links a:hover, .nav-links a.active { color:var(--white); }
+
+.container { max-width:1200px; margin:0 auto; padding:0 2rem; }
+.page { display:none; }
+.page.active { display:block; }
+
+/* Hero — Claim of the Day */
+.hero-cotd { background:var(--black); color:var(--white); padding:3rem 2rem 3.5rem; margin-bottom:2rem; }
+.hero-cotd .inner { max-width:1200px; margin:0 auto; }
+.hero-cotd .label { font-size:.7rem; text-transform:uppercase; letter-spacing:.15em; color:var(--accent); font-weight:700; margin-bottom:.75rem; display:flex; align-items:center; gap:.5rem; }
+.hero-cotd .label::before { content:''; display:inline-block; width:8px; height:8px; background:var(--accent); border-radius:50%; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.hero-cotd .claim-text { font-family:var(--serif); font-size:2rem; line-height:1.4; margin-bottom:1.25rem; max-width:800px; }
+.hero-cotd .meta { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+.hero-cotd .meta span { font-size:.85rem; color:var(--gray-300); }
+.hero-cotd .verdict-stamp { display:inline-flex; align-items:center; gap:.5rem; font-size:1rem; font-weight:900; text-transform:uppercase; letter-spacing:.08em; padding:.5rem 1rem; border:3px solid; border-radius:4px; transform:rotate(-2deg); }
+.stamp-true { color:#4ade80; border-color:#4ade80; }
+.stamp-mostly-true { color:#34d399; border-color:#34d399; }
+.stamp-mixed { color:#fbbf24; border-color:#fbbf24; }
+.stamp-mostly-false { color:#fb923c; border-color:#fb923c; }
+.stamp-false { color:#f87171; border-color:#f87171; }
+
+/* Search */
+.search-wrap { position:relative; max-width:600px; margin:2rem auto; }
+.search-wrap input { width:100%; padding:.875rem 1rem .875rem 2.75rem; background:var(--white); border:2px solid var(--black); border-radius:var(--radius); font-size:.95rem; outline:none; transition:border-color .2s; }
+.search-wrap input:focus { border-color:var(--accent); }
+.search-wrap input::placeholder { color:var(--gray-300); }
+.search-wrap svg { position:absolute; left:.875rem; top:50%; transform:translateY(-50%); color:var(--gray-400); }
+.search-results { position:absolute; top:100%; left:0; right:0; background:var(--white); border:2px solid var(--black); border-radius:var(--radius); margin-top:.25rem; overflow:hidden; z-index:50; display:none; box-shadow:4px 4px 0 var(--black); }
+.search-results.show { display:block; }
+.search-result-item { padding:.75rem 1rem; cursor:pointer; display:flex; align-items:center; gap:.75rem; transition:background .15s; border-bottom:1px solid var(--gray-100); }
+.search-result-item:last-child { border-bottom:none; }
+.search-result-item:hover { background:var(--accent-bg); }
+.search-result-item .type { font-size:.65rem; text-transform:uppercase; padding:.15rem .5rem; border-radius:3px; background:var(--black); color:var(--white); font-weight:700; letter-spacing:.06em; }
+
+/* Section headers */
+.section-title { font-family:var(--serif); font-size:1.5rem; margin-bottom:1rem; padding-bottom:.5rem; border-bottom:3px solid var(--black); display:flex; align-items:center; gap:.5rem; }
+.section-subtitle { font-size:.75rem; text-transform:uppercase; letter-spacing:.1em; color:var(--gray-400); font-weight:700; margin-bottom:.5rem; }
+
+/* Cards — bold with shadow */
+.card { background:var(--white); border:2px solid var(--gray-100); border-radius:var(--radius); padding:1.25rem; margin-bottom:.75rem; transition:all .2s; cursor:pointer; position:relative; }
+.card:hover { border-color:var(--black); box-shadow:4px 4px 0 var(--black); transform:translate(-2px,-2px); }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+@media(max-width:768px) { .grid-2 { grid-template-columns:1fr; } .hero-cotd .claim-text { font-size:1.4rem; } }
+
+/* Verdict — stamp style */
+.verdict { display:inline-flex; align-items:center; gap:.3rem; padding:.25rem .6rem; border-radius:3px; font-size:.75rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; border:2px solid; }
+.verdict-true { color:var(--green); border-color:var(--green); background:var(--green-bg); }
+.verdict-mostly-true { color:#059669; border-color:#059669; background:#d1fae5; }
+.verdict-mixed { color:var(--yellow); border-color:var(--yellow); background:var(--yellow-bg); }
+.verdict-mostly-false { color:var(--orange); border-color:var(--orange); background:var(--orange-bg); }
+.verdict-false { color:var(--red); border-color:var(--red); background:var(--red-bg); }
+
+/* Grade — bold seal */
+.grade { display:inline-flex; align-items:center; justify-content:center; width:56px; height:56px; border-radius:50%; font-size:1.5rem; font-weight:900; border:4px solid; position:relative; }
+.grade::after { content:''; position:absolute; inset:-2px; border-radius:50%; border:2px dashed; opacity:.3; }
+.grade-a { color:var(--green); border-color:var(--green); background:var(--green-bg); }
+.grade-a::after { border-color:var(--green); }
+.grade-b { color:#059669; border-color:#059669; background:#d1fae5; }
+.grade-b::after { border-color:#059669; }
+.grade-c { color:var(--yellow); border-color:var(--yellow); background:var(--yellow-bg); }
+.grade-c::after { border-color:var(--yellow); }
+.grade-d { color:var(--orange); border-color:var(--orange); background:var(--orange-bg); }
+.grade-d::after { border-color:var(--orange); }
+.grade-f { color:var(--red); border-color:var(--red); background:var(--red-bg); }
+.grade-f::after { border-color:var(--red); }
+.grade-sm { width:40px; height:40px; font-size:1.1rem; border-width:3px; }
+.grade-sm::after { border-width:1px; }
+
+/* Claim card */
+.claim-card .claim-text { font-size:1rem; font-weight:600; margin-bottom:.5rem; line-height:1.6; }
+.claim-card .claim-meta { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+.claim-meta .person { font-size:.85rem; color:var(--gray-500); font-weight:600; }
+.claim-meta .episode { font-size:.8rem; color:var(--gray-400); }
+.claim-meta .date { font-size:.8rem; color:var(--gray-400); }
+
+/* Person card */
+.person-card { display:flex; align-items:center; gap:1rem; }
+.person-card .avatar { width:48px; height:48px; border-radius:50%; background:var(--black); display:flex; align-items:center; justify-content:center; font-size:1rem; font-weight:800; color:var(--white); flex-shrink:0; }
+.person-card .info { flex:1; }
+.person-card .name { font-weight:700; font-size:1rem; }
+.person-card .podcast { font-size:.8rem; color:var(--gray-400); }
+.person-card .stats-inline { display:flex; gap:.75rem; margin-top:.25rem; }
+.stats-inline span { font-size:.8rem; color:var(--gray-400); font-weight:500; }
+
+/* Profile */
+.profile-header { display:flex; gap:2rem; align-items:flex-start; margin-bottom:2rem; padding:2rem; background:var(--white); border:2px solid var(--black); border-radius:var(--radius); }
+.profile-avatar { width:80px; height:80px; border-radius:50%; background:var(--black); display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:900; color:var(--white); flex-shrink:0; }
+.profile-info { flex:1; }
+.profile-info h2 { font-family:var(--serif); font-size:2rem; margin-bottom:.25rem; }
+.profile-info .podcast-name { color:var(--gray-400); margin-bottom:.75rem; }
+.profile-stats { display:flex; gap:2rem; }
+.profile-stat .val { font-size:1.3rem; font-weight:900; }
+.profile-stat .lbl { font-size:.7rem; color:var(--gray-400); text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
+.profile-grade { text-align:center; }
+.profile-grade .grade { width:80px; height:80px; font-size:2.2rem; border-width:5px; }
+.profile-grade .lbl { font-size:.7rem; color:var(--gray-400); margin-top:.5rem; font-weight:700; text-transform:uppercase; }
+
+/* Leaderboard — power ranking style */
+.lb-row { display:flex; align-items:center; gap:1rem; padding:1rem 1.25rem; }
+.lb-rank { font-family:var(--serif); font-size:1.5rem; font-weight:400; color:var(--gray-300); width:2.5rem; text-align:center; }
+.lb-rank.top { color:var(--accent); font-size:1.8rem; }
+.lb-divider { font-size:.7rem; text-transform:uppercase; letter-spacing:.15em; color:var(--gray-400); font-weight:700; padding:1rem 0 .5rem; border-bottom:2px solid var(--black); margin-bottom:.5rem; }
+
+/* Claim detail */
+.claim-detail-header { padding:2rem; background:var(--white); border:2px solid var(--black); border-radius:var(--radius); margin-bottom:1.5rem; }
+.claim-detail-header .claim-quote { font-family:var(--serif); font-size:1.5rem; line-height:1.6; margin-bottom:1rem; border-left:4px solid var(--accent); padding-left:1.25rem; }
+.evidence-card { background:var(--gray-50); border:1px solid var(--gray-100); border-radius:var(--radius); padding:1.25rem; margin-bottom:.75rem; }
+.evidence-card .source { font-size:.8rem; color:var(--accent); font-weight:700; margin-bottom:.35rem; text-transform:uppercase; letter-spacing:.04em; }
+.evidence-card .text { font-size:.95rem; color:var(--gray-600); line-height:1.7; }
+
+/* Transcript */
+.transcript-link { display:inline-flex; align-items:center; gap:.35rem; font-size:.85rem; color:var(--accent); cursor:pointer; margin-top:.75rem; padding:.4rem .75rem; border:2px solid var(--accent); border-radius:var(--radius); font-weight:700; transition:all .15s; }
+.transcript-link:hover { background:var(--accent); color:var(--white); }
+.transcript-section { background:var(--white); border:2px solid var(--gray-200); border-radius:var(--radius); padding:1.5rem; margin-bottom:1.5rem; }
+.transcript-section h3 { font-family:var(--serif); font-size:1.2rem; margin-bottom:1rem; }
+.transcript-line { padding:.6rem .75rem; font-size:.95rem; line-height:1.7; color:var(--gray-500); border-left:3px solid transparent; margin-bottom:.25rem; }
+.transcript-line .speaker { font-weight:800; color:var(--black); margin-right:.5rem; }
+.transcript-line .timestamp { font-size:.75rem; color:var(--gray-300); margin-left:.5rem; }
+.transcript-line.highlight { background:var(--accent-bg); border-left-color:var(--accent); color:var(--black); }
+.transcript-line.highlight .speaker { color:var(--accent); }
+.transcript-context-note { font-size:.85rem; color:var(--gray-400); font-style:italic; margin-bottom:1rem; padding:.75rem; background:var(--gray-50); border-radius:var(--radius); }
+.broader-context { margin-top:1rem; padding:1rem; background:var(--gray-50); border-radius:var(--radius); }
+.broader-context h4 { font-size:.8rem; color:var(--accent); margin-bottom:.5rem; text-transform:uppercase; letter-spacing:.08em; font-weight:800; }
+.broader-context p { font-size:.9rem; color:var(--gray-600); line-height:1.7; }
+
+/* Methodology */
+.method-section { background:var(--white); border:2px solid var(--gray-100); border-radius:var(--radius); padding:1.5rem; margin-bottom:1rem; }
+.method-section h3 { font-family:var(--serif); font-size:1.2rem; margin-bottom:.75rem; }
+.method-section p, .method-section li { font-size:.95rem; color:var(--gray-600); line-height:1.8; }
+.method-section ul { padding-left:1.25rem; }
+.method-section li { margin-bottom:.35rem; }
+
+.back-link { display:inline-flex; align-items:center; gap:.35rem; font-size:.85rem; color:var(--gray-400); margin-bottom:1.5rem; cursor:pointer; font-weight:700; }
+.back-link:hover { color:var(--black); }
+
+footer { background:var(--black); color:var(--gray-400); text-align:center; padding:2.5rem 2rem; font-size:.8rem; margin-top:3rem; }
+footer strong { color:var(--white); }
+
+.trending-tag { display:inline-flex; align-items:center; gap:.25rem; background:var(--accent); color:var(--white); font-size:.65rem; font-weight:800; padding:.2rem .5rem; border-radius:3px; text-transform:uppercase; letter-spacing:.06em; }
+
+.accuracy-bar { height:6px; background:var(--gray-100); border-radius:3px; overflow:hidden; margin-top:.5rem; }
+.accuracy-fill { height:100%; border-radius:3px; }
+
+/* Filter pills */
+.filter-bar { display:flex; gap:.5rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+.filter-pill { font-size:.75rem; padding:.35rem .75rem; border-radius:3px; border:2px solid var(--gray-200); color:var(--gray-500); cursor:pointer; transition:all .15s; background:var(--white); font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+.filter-pill:hover { border-color:var(--black); color:var(--black); }
+.filter-pill.active { border-color:var(--accent); color:var(--accent); background:var(--accent-bg); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo" onclick="navigate('home')">🎙️ <span>PodCheck</span></div>
+    <div class="nav-links">
+      <a onclick="navigate('home')" class="active" id="nav-home">Home</a>
+      <a onclick="navigate('leaderboard')" id="nav-leaderboard">Rankings</a>
+      <a onclick="navigate('methodology')" id="nav-methodology">Method</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Claim of the Day Hero -->
+<div class="hero-cotd" id="hero-cotd"></div>
+
+<div class="container">
+  <div class="page active" id="page-home">
+    <div class="search-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search-input" placeholder="Search claims, people, or podcasts..." oninput="handleSearch(this.value)" onfocus="handleSearch(this.value)">
+      <div class="search-results" id="search-results"></div>
+    </div>
+
+    <div class="filter-bar">
+      <span class="filter-pill active" onclick="filterClaims('all')">All</span>
+      <span class="filter-pill" onclick="filterClaims('true')">True</span>
+      <span class="filter-pill" onclick="filterClaims('mostly-true')">Mostly True</span>
+      <span class="filter-pill" onclick="filterClaims('mixed')">Mixed</span>
+      <span class="filter-pill" onclick="filterClaims('mostly-false')">Mostly False</span>
+      <span class="filter-pill" onclick="filterClaims('false')">False</span>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:3rem;">
+      <div>
+        <div class="section-title">Trending</div>
+        <div id="trending-claims"></div>
+      </div>
+      <div>
+        <div class="section-title">Power Rankings</div>
+        <div id="top-podcasters"></div>
+      </div>
+    </div>
+
+    <div class="section-title">Latest Checks</div>
+    <div id="recent-claims"></div>
+  </div>
+
+  <div class="page" id="page-leaderboard">
+    <div style="padding-top:2rem">
+      <div class="section-subtitle">Accuracy Rankings</div>
+      <h1 style="font-family:var(--serif);font-size:2.5rem;margin-bottom:.5rem">Power Rankings</h1>
+      <p style="color:var(--gray-400);margin-bottom:2rem;max-width:500px">Who gets it right? Podcasters ranked by factual accuracy across all checked claims.</p>
+    </div>
+    <div id="leaderboard-list"></div>
+  </div>
+
+  <div class="page" id="page-profile">
+    <div class="back-link" onclick="navigate('home')">← Back</div>
+    <div id="profile-content"></div>
+  </div>
+
+  <div class="page" id="page-claim">
+    <div class="back-link" onclick="goBack()">← Back</div>
+    <div id="claim-content"></div>
+  </div>
+
+  <div class="page" id="page-methodology">
+    <div style="padding-top:2rem">
+      <div class="section-subtitle">How It Works</div>
+      <h1 style="font-family:var(--serif);font-size:2.5rem;margin-bottom:2rem">Our Methodology</h1>
+    </div>
+    <div class="method-section"><h3>1. Claim Extraction</h3><p>AI transcribes episodes and identifies verifiable factual claims — data, events, science, history. Opinions and predictions are excluded.</p></div>
+    <div class="method-section"><h3>2. Evidence Gathering</h3><p>Each claim is cross-referenced against:</p><ul><li>Peer-reviewed papers and meta-analyses</li><li>Government data (BLS, CBO, Fed, CDC, WHO)</li><li>Fact-checking organizations</li><li>Academic institutions and expert consensus</li><li>Primary sources cited by the speaker</li></ul></div>
+    <div class="method-section"><h3>3. Verdict Scale</h3><ul><li><strong style="color:var(--green)">True</strong> — Fully supported</li><li><strong style="color:#059669">Mostly True</strong> — Largely accurate, minor caveats</li><li><strong style="color:var(--yellow)">Mixed</strong> — Both accurate and inaccurate elements</li><li><strong style="color:var(--orange)">Mostly False</strong> — Significant inaccuracies</li><li><strong style="color:var(--red)">False</strong> — Contradicted by evidence</li></ul></div>
+    <div class="method-section"><h3>4. Grades</h3><p>Letter grades A–F based on accuracy rate. A ≥ 85%, B ≥ 70%, C ≥ 55%, D ≥ 40%, F &lt; 40%.</p></div>
+    <div class="method-section"><h3>5. Transparency</h3><p>Every verdict includes the quote, context, sources, and reasoning. We show our work.</p></div>
+  </div>
+</div>
+
+<footer><strong>🎙️ PodCheck</strong> © 2026 — Every claim. Checked.<br>Not affiliated with any podcast.</footer>
+
+<script>
+const people = [
+  { id:'chamath', name:'Chamath Palihapitiya', initials:'CP', podcast:'All-In Podcast', grade:'B', accuracy:74, claimsChecked:86, trueRate:42, mostlyTrueRate:22, mixedRate:18, mostlyFalseRate:12, falseRate:6 },
+  { id:'sacks', name:'David Sacks', initials:'DS', podcast:'All-In Podcast', grade:'C', accuracy:61, claimsChecked:79, trueRate:30, mostlyTrueRate:20, mixedRate:24, mostlyFalseRate:16, falseRate:10 },
+  { id:'friedberg', name:'David Friedberg', initials:'DF', podcast:'All-In Podcast', grade:'A', accuracy:88, claimsChecked:64, trueRate:58, mostlyTrueRate:20, mixedRate:14, mostlyFalseRate:6, falseRate:2 },
+  { id:'jason', name:'Jason Calacanis', initials:'JC', podcast:'All-In Podcast', grade:'C', accuracy:58, claimsChecked:91, trueRate:28, mostlyTrueRate:18, mixedRate:26, mostlyFalseRate:18, falseRate:10 },
+  { id:'huberman', name:'Andrew Huberman', initials:'AH', podcast:'Huberman Lab', grade:'B', accuracy:78, claimsChecked:124, trueRate:52, mostlyTrueRate:22, mixedRate:16, mostlyFalseRate:7, falseRate:3 },
+  { id:'lex', name:'Lex Fridman', initials:'LF', podcast:'Lex Fridman Podcast', grade:'A', accuracy:85, claimsChecked:47, trueRate:55, mostlyTrueRate:25, mixedRate:12, mostlyFalseRate:6, falseRate:2 },
+];
+const claims = [
+  { id:1, person:'chamath', text:'"US federal debt interest payments now exceed the entire defense budget — we\'re spending over $1.1 trillion a year on interest alone."', verdict:'true', episode:'All-In E213', date:'Jan 10, 2026', trending:true, context:'Chamath discussed the fiscal trajectory of the US.', evidence:[{source:'US Treasury / CBO',text:'CBO confirms net interest ~$1.05T in FY2025, surpassing defense (~$886B).'},{source:'Dept of Defense',text:'FY2026 defense budget request is $895B.'}], broaderContext:'Chamath argued the US is in a fiscal death spiral.', transcript:[{speaker:'Jason',time:'42:15',text:'OK macro segment. Chamath, you\'ve been doom-pilled.'},{speaker:'Chamath',time:'42:21',text:'How can you not be? Look at the numbers.'},{speaker:'Chamath',time:'42:30',text:'US federal debt interest payments now exceed the entire defense budget — we\'re spending over $1.1 trillion a year on interest alone.',highlight:true},{speaker:'Chamath',time:'42:38',text:'We spend more servicing our debt than the entire military.'},{speaker:'Sacks',time:'42:45',text:'People are talking about it. Nobody\'s doing anything.'},{speaker:'Friedberg',time:'42:50',text:'The compounding effect is scary.'},{speaker:'Jason',time:'42:58',text:'So what\'s the play?'},{speaker:'Chamath',time:'43:05',text:'GDP growth above the interest rate. Only mathematical way out.'}]},
+  { id:2, person:'huberman', text:'"Cold exposure at 50°F for 11 minutes per week has been shown to increase dopamine levels by 250-300% above baseline."', verdict:'mostly-true', episode:'Huberman Lab #312', date:'Jan 14, 2026', trending:true, context:'Huberman on cold exposure and dopamine.', evidence:[{source:'Šrámek et al., 2000',text:'Cold water at 14°C showed 250% dopamine increase.'},{source:'Note',text:'11-min/week is Huberman\'s extrapolated recommendation.'}], broaderContext:'Part of his comprehensive dopamine episode.', transcript:[{speaker:'Huberman',time:'28:10',text:'The most underutilized tool for dopamine optimization.'},{speaker:'Huberman',time:'28:18',text:'Most people think cold plunge is just recovery.'},{speaker:'Huberman',time:'28:27',text:'Cold exposure at 50°F for 11 minutes per week has been shown to increase dopamine levels by 250-300% above baseline.',highlight:true},{speaker:'Huberman',time:'28:38',text:'Comparable to pharmaceutical interventions.'},{speaker:'Huberman',time:'28:50',text:'And the increase is long-lasting.'},{speaker:'Huberman',time:'29:02',text:'11 minutes total per week, 2 to 4 sessions.'}]},
+  { id:3, person:'sacks', text:'"Europe\'s entire tech sector is worth less than just Apple or just Microsoft individually."', verdict:'mostly-true', episode:'All-In E215', date:'Jan 24, 2026', context:'Sacks on European tech regulation.', evidence:[{source:'Bloomberg',text:'Apple ~$3.8T, Microsoft ~$3.2T. STOXX Europe 600 Tech ~$1.8T, broadened ~$2.5T.'},{source:'Caveat',text:'Depends on "tech sector" definition. Directionally correct.'}]},
+  { id:4, person:'jason', text:'"Over 40% of YC\'s latest batch are AI wrappers — just GPT with a UI on top."', verdict:'mixed', episode:'All-In E214', date:'Jan 17, 2026', trending:true, context:'Jason on the AI startup bubble.', evidence:[{source:'YC W25 Data',text:'~60%+ AI-related, but "wrappers" is subjective.'},{source:'TechCrunch',text:'Analysts estimate 25-35% thin wrappers. 40% is high end.'}], broaderContext:'Jason argued the AI ecosystem is in a bubble.', transcript:[{speaker:'Jason',time:'51:30',text:'The AI bubble.'},{speaker:'Jason',time:'51:37',text:'Over 40% of YC\'s latest batch are AI wrappers — just GPT with a UI on top.',highlight:true},{speaker:'Jason',time:'51:44',text:'Three different "AI email writer" companies.'},{speaker:'Friedberg',time:'51:52',text:'You\'re being reductive.'},{speaker:'Chamath',time:'52:00',text:'What happens when OpenAI builds it natively?'},{speaker:'Sacks',time:'52:08',text:'I\'d put it at 25-30%.'}]},
+  { id:5, person:'huberman', text:'"Morning sunlight for 10 minutes advances your circadian clock and improves sleep onset by 30-45 minutes."', verdict:'true', episode:'Huberman Lab #314', date:'Jan 28, 2026', context:'Light exposure protocol.', evidence:[{source:'Journal of Biological Rhythms',text:'Bright light advances circadian phase. 20-45 min improvement documented.'},{source:'Duffy & Czeisler, 2009',text:'Systematic review confirms efficacy.'}]},
+  { id:6, person:'friedberg', text:'"Global average temp in 2025 was 1.55°C above pre-industrial baseline — hottest year on record for second consecutive year."', verdict:'true', episode:'All-In E216', date:'Feb 1, 2026', context:'Climate data.', evidence:[{source:'Copernicus C3S',text:'Confirmed 1.55°C above baseline.'},{source:'NASA GISS',text:'Confirmed tied for hottest.'}]},
+  { id:7, person:'lex', text:'"GPT-5 class models are estimated to have been trained on over 10 trillion tokens."', verdict:'mostly-true', episode:'Lex Fridman #438', date:'Feb 3, 2026', context:'Scaling laws discussion.', evidence:[{source:'Epoch AI',text:'Frontier models: 5-15T tokens. 10T is reasonable.'},{source:'Note',text:'Exact figures proprietary.'}]},
+  { id:8, person:'sacks', text:'"DOGE has already saved taxpayers $100 billion in its first month."', verdict:'false', episode:'All-In E217', date:'Feb 5, 2026', trending:true, context:'Sacks praised DOGE.', evidence:[{source:'WashPost / FactCheck.org',text:'$100B includes expiring contracts, court-released funds, double-counting. Real: $4-8B.'},{source:'CBO',text:'CBO has not validated.'}], broaderContext:'Heated debate; Sacks defended DOGE.', transcript:[{speaker:'Jason',time:'15:20',text:'DOGE report card?'},{speaker:'Sacks',time:'15:27',text:'DOGE has already saved taxpayers $100 billion in its first month.',highlight:true},{speaker:'Sacks',time:'15:34',text:'Their published number.'},{speaker:'Friedberg',time:'15:42',text:'Huge chunk is expiring contracts.'},{speaker:'Chamath',time:'15:52',text:'Courts ordered frozen funds released.'},{speaker:'Sacks',time:'16:00',text:'Direction of travel is clear.'},{speaker:'Jason',time:'16:08',text:'Even 10B is significant.'}]},
+  { id:9, person:'chamath', text:'"GLP-1 drugs will reduce US healthcare spending by $500 billion per year within a decade."', verdict:'mixed', episode:'All-In E215', date:'Jan 24, 2026', context:'GLP-1 as transformative.', evidence:[{source:'Goldman Sachs',text:'Projects $150-250B by 2035. $500B above consensus.'},{source:'NEJM',text:'15-20% weight reduction but drug costs offset savings.'}]},
+  { id:10, person:'huberman', text:'"Creatine at 5g/day has robust evidence for cognitive benefits — improving working memory by about 15%."', verdict:'mostly-true', episode:'Huberman Lab #316', date:'Feb 6, 2026', context:'Nootropics discussion.', evidence:[{source:'Avgerinos et al., 2018',text:'Meta-analysis: creatine improved memory. 15% is upper range.'},{source:'Forbes et al., 2022',text:'Supports cognitive benefits, especially vegetarians.'}]},
+  { id:11, person:'jason', text:'"Uber is now profitable with a higher market cap than Ford and GM combined."', verdict:'true', episode:'All-In E213', date:'Jan 10, 2026', context:'Ride-sharing vindication.', evidence:[{source:'Market Data',text:'Uber ~$165B vs Ford+GM ~$94B combined.'}]},
+  { id:12, person:'lex', text:'"\'Attention Is All You Need\' has been cited over 140,000 times."', verdict:'true', episode:'Lex Fridman #436', date:'Jan 20, 2026', context:'Transformer significance.', evidence:[{source:'Google Scholar',text:'~145,000+ citations as of early 2026.'}]},
+  { id:13, person:'friedberg', text:'"Lab-grown meat costs dropped 99% since 2013 — from $330,000/lb to about $30/lb."', verdict:'mostly-true', episode:'All-In E217', date:'Feb 5, 2026', context:'Food tech.', evidence:[{source:'GFI',text:'First burger 2013 ~$330K. Now $20-50/lb. 99% directionally accurate.'},{source:'Note',text:'Production costs, not retail.'}]},
+];
+
+function verdictClass(v){return'verdict-'+v}
+function stampClass(v){return'stamp-'+v}
+function verdictLabel(v){return{true:'True','mostly-true':'Mostly True',mixed:'Mixed','mostly-false':'Mostly False',false:'False'}[v]}
+function gradeClass(g){return'grade-'+g.toLowerCase()}
+function getPerson(id){return people.find(p=>p.id===id)}
+function getPersonClaims(id){return claims.filter(c=>c.person===id)}
+function accuracyColor(a){return a>=85?'var(--green)':a>=70?'#059669':a>=55?'var(--yellow)':a>=40?'var(--orange)':'var(--red)'}
+
+function renderClaimCard(c,showPerson=true){
+  const p=getPerson(c.person);
+  return`<div class="card" onclick="showClaim(${c.id})"><div class="claim-card"><div class="claim-text">${c.text}</div><div class="claim-meta"><span class="verdict ${verdictClass(c.verdict)}">${verdictLabel(c.verdict)}</span>${showPerson?`<span class="person">${p.name}</span>`:''}<span class="episode">${c.episode}</span><span class="date">${c.date}</span>${c.trending?'<span class="trending-tag">🔥 Trending</span>':''}${c.transcript?'<span style="font-size:.75rem;color:var(--gray-300)">📜</span>':''}</div></div></div>`;
+}
+
+function renderPersonCard(p){
+  return`<div class="card" onclick="showProfile('${p.id}')"><div class="person-card"><div class="avatar">${p.initials}</div><div class="info"><div class="name">${p.name}</div><div class="podcast">${p.podcast}</div><div class="stats-inline"><span>${p.claimsChecked} claims</span><span>${p.accuracy}%</span></div><div class="accuracy-bar"><div class="accuracy-fill" style="width:${p.accuracy}%;background:${accuracyColor(p.accuracy)}"></div></div></div><div class="grade ${gradeClass(p.grade)}">${p.grade}</div></div></div>`;
+}
+
+let lastPage='home';
+function navigate(page){
+  if(page!=='claim'&&page!=='profile')lastPage=page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const navEl=document.getElementById('nav-'+page);if(navEl)navEl.classList.add('active');
+  // Show/hide hero
+  document.getElementById('hero-cotd').style.display=page==='home'?'block':'none';
+  window.scrollTo(0,0);
+}
+function goBack(){navigate(lastPage)}
+
+function showProfile(id){
+  const p=getPerson(id);const pc=getPersonClaims(id);
+  document.getElementById('profile-content').innerHTML=`<div class="profile-header"><div class="profile-avatar">${p.initials}</div><div class="profile-info"><h2>${p.name}</h2><div class="podcast-name">${p.podcast}</div><div class="profile-stats"><div class="profile-stat"><div class="val">${p.claimsChecked}</div><div class="lbl">Claims</div></div><div class="profile-stat"><div class="val">${p.accuracy}%</div><div class="lbl">Accuracy</div></div><div class="profile-stat"><div class="val">${p.trueRate}%</div><div class="lbl">True</div></div><div class="profile-stat"><div class="val">${p.falseRate}%</div><div class="lbl">False</div></div></div></div><div class="profile-grade"><div class="grade ${gradeClass(p.grade)}">${p.grade}</div><div class="lbl">Accuracy Grade</div></div></div><div class="section-title">Checked Claims</div>${pc.map(c=>renderClaimCard(c,false)).join('')}`;
+  navigate('profile');
+}
+
+function showClaim(id){
+  const c=claims.find(x=>x.id===id);const p=getPerson(c.person);
+  let transcriptHtml='';
+  if(c.transcript){transcriptHtml=`<div class="transcript-section"><h3>📜 Transcript Context</h3><div class="transcript-context-note">Conversation from ${c.episode}. Checked claim highlighted.</div>${c.transcript.map(t=>`<div class="transcript-line ${t.highlight?'highlight':''}"><span class="speaker">${t.speaker}:</span>${t.text}<span class="timestamp">${t.time}</span></div>`).join('')}${c.broaderContext?`<div class="broader-context"><h4>Broader Context</h4><p>${c.broaderContext}</p></div>`:''}</div>`;}
+  document.getElementById('claim-content').innerHTML=`<div class="claim-detail-header"><div style="margin-bottom:1rem"><span class="verdict-stamp ${stampClass(c.verdict)}">${verdictLabel(c.verdict)}</span>${c.trending?' <span class="trending-tag" style="margin-left:.75rem">🔥 Trending</span>':''}</div><div class="claim-quote">${c.text}</div><div class="claim-meta"><span class="person" style="cursor:pointer;color:var(--accent);font-weight:700" onclick="showProfile('${c.person}')">👤 ${p.name}</span><span class="episode">${c.episode}</span><span class="date">${c.date}</span>${c.transcript?'<span class="transcript-link" onclick="document.getElementById(\'transcript-area\').scrollIntoView({behavior:\'smooth\'})">📜 Transcript</span>':''}</div></div>${c.context?`<div style="color:var(--gray-500);font-size:.95rem;margin-bottom:1.5rem;line-height:1.7"><strong style="color:var(--black)">Context:</strong> ${c.context}</div>`:''}<div class="section-title" style="font-size:1.2rem">Evidence</div>${(c.evidence||[]).map(e=>`<div class="evidence-card"><div class="source">${e.source}</div><div class="text">${e.text}</div></div>`).join('')}<div id="transcript-area">${transcriptHtml}</div>`;
+  navigate('claim');
+}
+
+function handleSearch(q){
+  const res=document.getElementById('search-results');
+  if(!q.trim()){res.classList.remove('show');return}
+  q=q.toLowerCase();const matches=[];
+  people.filter(p=>p.name.toLowerCase().includes(q)||p.podcast.toLowerCase().includes(q)).forEach(p=>matches.push({type:'person',label:p.name,sub:p.podcast,action:`showProfile('${p.id}')`}));
+  claims.filter(c=>c.text.toLowerCase().includes(q)).slice(0,5).forEach(c=>{const p=getPerson(c.person);matches.push({type:'claim',label:c.text.slice(1,80)+'...',sub:p.name,action:`showClaim(${c.id})`})});
+  if(!matches.length){res.classList.remove('show');return}
+  res.innerHTML=matches.map(m=>`<div class="search-result-item" onclick="${m.action};document.getElementById('search-results').classList.remove('show')"><span class="type">${m.type}</span><div><div style="font-size:.9rem;font-weight:600">${m.label}</div><div style="font-size:.75rem;color:var(--gray-400)">${m.sub}</div></div></div>`).join('');
+  res.classList.add('show');
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('search-results').classList.remove('show')});
+
+let currentFilter='all';
+function filterClaims(f){
+  currentFilter=f;
+  document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));
+  event.target.classList.add('active');
+  renderHome();
+}
+
+function renderHome(){
+  const filtered=currentFilter==='all'?claims:claims.filter(c=>c.verdict===currentFilter);
+  document.getElementById('trending-claims').innerHTML=filtered.filter(c=>c.trending).map(c=>renderClaimCard(c)).join('')||'<p style="color:var(--gray-400);font-size:.9rem">No claims match.</p>';
+  document.getElementById('top-podcasters').innerHTML=[...people].sort((a,b)=>b.accuracy-a.accuracy).slice(0,4).map(p=>renderPersonCard(p)).join('');
+  document.getElementById('recent-claims').innerHTML=filtered.slice(0,6).map(c=>renderClaimCard(c)).join('')||'<p style="color:var(--gray-400)">No claims match.</p>';
+}
+
+function renderCOTD(){
+  // Pick the first trending claim as Claim of the Day
+  const c=claims.find(x=>x.trending);const p=getPerson(c.person);
+  document.getElementById('hero-cotd').innerHTML=`<div class="inner"><div class="label">Claim of the Day</div><div class="claim-text" style="cursor:pointer" onclick="showClaim(${c.id})">${c.text}</div><div class="meta"><span class="verdict-stamp ${stampClass(c.verdict)}">${verdictLabel(c.verdict)}</span><span style="font-weight:600">${p.name}</span><span>${c.episode}</span><span>${c.date}</span></div></div>`;
+}
+
+function init(){
+  renderCOTD();
+  renderHome();
+  const sorted=[...people].sort((a,b)=>b.accuracy-a.accuracy);
+  const tiers=[{label:'Elite Tier (A)',min:85},{label:'Strong (B)',min:70},{label:'Average (C-D)',min:0}];
+  let lbHtml='';
+  sorted.forEach((p,i)=>{
+    lbHtml+=`<div class="card" onclick="showProfile('${p.id}')"><div class="lb-row"><div class="lb-rank ${i<3?'top':''}">${i+1}</div><div class="avatar" style="width:48px;height:48px;border-radius:50%;background:var(--black);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--white);flex-shrink:0">${p.initials}</div><div style="flex:1"><div style="font-weight:700;font-size:1.05rem">${p.name}</div><div style="font-size:.8rem;color:var(--gray-400)">${p.podcast} · ${p.claimsChecked} claims</div><div class="accuracy-bar" style="max-width:300px"><div class="accuracy-fill" style="width:${p.accuracy}%;background:${accuracyColor(p.accuracy)}"></div></div></div><div style="text-align:right"><div style="font-family:var(--serif);font-size:1.3rem;color:${accuracyColor(p.accuracy)}">${p.accuracy}%</div><div class="grade grade-sm ${gradeClass(p.grade)}" style="margin-top:.25rem">${p.grade}</div></div></div></div>`;
+  });
+  document.getElementById('leaderboard-list').innerHTML=lbHtml;
+}
+init();
+</script>
+</body>
+</html>
